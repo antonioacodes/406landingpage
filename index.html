@@ -67,7 +67,26 @@
             text-decoration: none
         }
 
-        .nav a:last-child {
+        .nav .brand-mark {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 88px;
+            height: 54px;
+            overflow: hidden;
+        }
+
+        .nav .brand-mark img {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .nav .brand-406 img { transform: scale(1.55); }
+        .nav .brand-gg img { transform: scale(1.16); mix-blend-mode: screen; }
+
+        .nav .nav-cta {
             color: #fff;
             padding: 10px 13px;
             border: 1px solid #ffffff52
@@ -431,8 +450,11 @@
 <body>
     <div class="noise"></div>
     <section class="hero" id="top">
-        <nav class="nav"><a href="#top">406 REC. / ARTIST COLLECTIVE</a><span>DROP 001 — 406 MONTANA</span><a
-                href="#lista">ENTRAR NA LISTA</a></nav>
+        <nav class="nav">
+            <a class="brand-mark brand-406" href="#top" aria-label="406 REC"><img src="assets/logo406.png" alt="Logo 406"></a>
+            <span>DROP 001 — 406 MONTANA</span>
+            <a class="brand-mark brand-gg" href="#top" aria-label="GG — designer da camiseta"><img src="assets/GG_v3.png" alt="GG, designer da camiseta"></a>
+        </nav>
         <div class="hero-copy">
             <div class="kicker">PRÉ-VENDA LIMITADA / 2026</div>
             <h1>VISTA<br>O <em>CICLO.</em></h1>
@@ -460,13 +482,6 @@
                 <h2>DIFERENTE<br>DOS IGUAIS.</h2>
                 <p>Um selo. Um coletivo. Uma linguagem que vive no som, na roupa e no movimento. A peça carrega a
                     assinatura visual do EP 406 Montana.</p>
-                <div class="tracklist">
-                    <div><span>01</span><span>MONTANA</span></div>
-                    <div><span>02</span><span>SISTEMA</span></div>
-                    <div><span>03</span><span>MISSÃO</span></div>
-                    <div><span>04</span><span>DIFERENTE DOS IGUAIS</span></div>
-                    <div><span>05</span><span>PROFANO</span></div>
-                </div>
             </div>
         </section>
     </main>
