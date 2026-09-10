@@ -36,7 +36,16 @@ if ($order && $transactionNsu !== '' && $slug !== '') {
     if ($paid) {
         $pdo = db();
         $pdo->beginTransaction();
-        $pdo->prepare("UPDATE orders SET status='paid' WHERE id=?")->execute([(int)$order['id']]);
+        $paidUpdate = $pdo->prepare("UPDATE orders SET status='paid' WHERE id=? AND status!='paid'");
+        $paidUpdate->execute([(int)$order['id']]);
+        if ($paidUpdate->rowCount() > 0 && !empty($order['cart_id'])) {
+            $pdo->prepare(
+                'UPDATE sizes SET stock = MAX(0, stock - COALESCE((
+                    SELECT SUM(ci.quantity) FROM cart_items ci
+                    WHERE ci.cart_id=? AND ci.size_id=sizes.id
+                ),0)) WHERE id IN (SELECT size_id FROM cart_items WHERE cart_id=?)'
+            )->execute([(int)$order['cart_id'], (int)$order['cart_id']]);
+        }
         if (!empty($order['cart_id'])) {
             $pdo->prepare("UPDATE carts SET status='converted', updated_at=CURRENT_TIMESTAMP WHERE id=?")
                 ->execute([(int)$order['cart_id']]);
