@@ -295,115 +295,32 @@ $normalPrice = (int) setting('price_cents');
             letter-spacing: .08em
         }
 
-        .drop {
-            background: #e5ddd1;
-            color: #120e0d;
-            padding: 110px 0
-        }
 
-        .drop-grid {
-            width: min(1360px, 94vw);
-            margin: auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8vw
-        }
-
-        .drop h2 {
-            font: clamp(56px, 8vw, 130px)/.92 'Bebas Neue', sans-serif;
-            margin: 0
-        }
-
-        .drop-product-wrap {
-            margin: 28px 0 34px;
-            min-height: 420px;
-            display: grid;
-            place-items: center;
-            background: linear-gradient(145deg, #d7cec1, #f2ece4);
-            overflow: hidden;
-        }
-
-        .drop-product {
-            width: 100%;
-            height: 500px;
-            object-fit: contain;
-            filter: drop-shadow(0 28px 24px #0005);
-        }
-
-        .limited {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin: 10px 0 6px;
-            color: #9e171d;
-            font: 700 11px 'DM Mono';
-            letter-spacing: .14em;
-        }
-
-        .limited:before {
-            content: '';
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--r);
-            box-shadow: 0 0 0 5px #d1272f18;
-        }
-
-        .form {
-            display: grid;
-            gap: 15px
-        }
-
-        .form label {
-            font: 10px 'DM Mono';
-            letter-spacing: .14em
-        }
-
-        .form input {
-            width: 100%;
-            padding: 12px 0;
-            border: 0;
-            border-bottom: 1px solid #201a18;
-            background: transparent;
-            font: 16px Inter;
-            outline: 0
-        }
-
-        .form input:focus {
-            border-color: var(--r)
-        }
-
-        button {
-            border: 0;
-            background: #15100f;
-            color: white;
-            padding: 17px;
-            font: 500 12px 'DM Mono';
-            letter-spacing: .12em;
-            cursor: pointer
-        }
-
-        button:hover {
-            background: var(--r)
-        }
-
-        #feedback {
-            min-height: 30px;
-            margin: 0;
-            color: #a71d23;
-            font: 11px 'DM Mono';
-            line-height: 1.5
-        }
-
-        .price { font: 42px 'Bebas Neue'; margin: 8px 0 18px; letter-spacing:.04em }
-        .old-price { color:#8a8076; text-decoration:line-through; font:14px 'DM Mono'; margin-left:10px }
-        .size-select { width:100%; padding:14px; border:1px solid #201a18; background:transparent; font:16px Inter; }
-        .measurements { margin-top:22px; padding-top:16px; border-top:1px solid #ffffff35; white-space:pre-line; color:#c5b9aa; line-height:1.6 }
-        .fine {
-            font-size: 11px;
-            line-height: 1.5;
-            color: #6d645d
-        }
+        .drop{background:#eee9e1;color:#171411;padding:88px 0;scroll-margin-top:24px}
+        .drop-grid{width:min(1180px,90vw);margin:auto;display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);gap:72px;align-items:center}
+        .drop-product-wrap{margin:0;display:grid;place-items:center;background:transparent;min-width:0}
+        .drop-product{display:block;width:100%;height:auto;max-height:690px;object-fit:contain;filter:none}
+        .product-info{min-width:0;padding:16px 0}
+        .drop .label{color:#8a534c;font:600 11px/1.5 Inter,Arial,sans-serif;letter-spacing:.16em}
+        .drop h2{font:600 clamp(30px,3.4vw,46px)/1.12 Inter,Arial,sans-serif;letter-spacing:-.045em;margin:16px 0}
+        .product-description{font:400 14px/1.8 Inter,Arial,sans-serif;color:#6a625a;margin:14px 0 22px}
+        .limited{display:inline-flex;align-items:center;gap:8px;font:600 11px/1.4 Inter,Arial,sans-serif;letter-spacing:.07em;color:#8e2b30}
+        .limited:before{content:'';width:6px;height:6px;border-radius:50%;background:#a62a32}
+        .price{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;font:600 32px/1.2 Inter,Arial,sans-serif;letter-spacing:-.04em;margin:26px 0}
+        .old-price{font:400 15px/1.3 Inter,Arial,sans-serif;color:#91867d;text-decoration:line-through;letter-spacing:0}
+        .form{display:grid;gap:16px;align-self:start;align-content:start;grid-auto-rows:max-content;margin:0}
+        .form label{display:grid;gap:10px;font:600 12px/1.5 Inter,Arial,sans-serif;letter-spacing:.02em}
+        .size-select{display:block;width:100%;height:50px;padding:0 14px;color:#211c18;border:1px solid #c5bdb3;border-radius:4px;background:#f7f3ed;font:400 16px Inter,Arial,sans-serif}
+        .size-select:focus-visible{outline:2px solid #a82d36;outline-offset:3px}
+        .form button{display:flex;align-items:center;justify-content:space-between;width:100%;height:54px;min-height:54px;padding:0 20px;border:0;border-radius:4px;background:#1b1816;color:#fff;font:600 13px Inter,Arial,sans-serif;letter-spacing:.02em;cursor:pointer;transition:background .2s}
+        .form button:hover{background:#a42630}
+        .form button span{font-size:20px;font-weight:400}
+        .fine{font:400 12px/1.6 Inter,Arial,sans-serif;color:#7c7167;margin:0}
+        #feedback{font:400 13px/1.6 Inter,Arial,sans-serif;color:#8e2b30}
+        .measurements{margin-top:28px;border-top:1px solid #cec5bb;border-bottom:1px solid #cec5bb;padding:18px 0}
+        .measurements summary{cursor:pointer;font:600 13px/1.5 Inter,Arial,sans-serif}
+        .measurements-body{font:400 13px/1.8 Inter,Arial,sans-serif;color:#6a625a;margin-top:14px;overflow-wrap:anywhere}
+        @media(max-width:760px){.drop{padding:48px 0}.drop-grid{grid-template-columns:1fr;gap:16px;width:88vw}.drop-product{max-height:450px}.product-info{padding:0}.drop h2{font-size:32px}.price{font-size:28px;margin:22px 0}.drop-product-wrap{min-height:0}}
 
         .foot {
             padding: 25px 3vw;
@@ -466,8 +383,8 @@ $normalPrice = (int) setting('price_cents');
                 padding: 72px 0
             }
 
-            .drop-product-wrap { min-height: 320px; }
-            .drop-product { height: 380px; }
+            .drop-product-wrap { min-height: 0; }
+            .drop-product { height: auto; }
 
             .foot {
                 padding: 22px 7vw
@@ -518,22 +435,32 @@ $normalPrice = (int) setting('price_cents');
             </div>
         </section>
     </main>
-    <section class="drop" id="lista">
+    <section class="drop" id="lista" aria-label="Comprar camiseta 406 Montana">
         <div class="drop-grid">
-            <div>
-                <div class="label">DROP 001 / DISPONÍVEL</div>
+            <div class="drop-product-wrap"><img class="drop-product" src="assets/shirt.png" alt="Camisa 406 Montana com arte de ouroboros" loading="lazy"></div>
+            <div class="product-info">
+                <div class="label">406 REC × GG / DROP 001</div>
                 <h2><?=htmlspecialchars(setting('product_name'))?></h2>
-                <div class="limited">PEÇAS LIMITADAS</div>
-                <div class="drop-product-wrap"><img class="drop-product" src="assets/shirt.png" alt="Camisa 406 Montana"></div>
-                <p><?=nl2br(htmlspecialchars(setting('product_description')))?></p>
-                <div class="measurements"><strong><?=htmlspecialchars(setting('measurements_title'))?></strong><br><?=nl2br(htmlspecialchars(setting('measurements')))?></div>
+                <div class="limited">Peças limitadas</div>
+                <p class="product-description"><?=nl2br(htmlspecialchars(setting('product_description')))?></p>
+                <div class="price"><?=money($price)?><?php if ($normalPrice > $price): ?><span class="old-price"><?=money($normalPrice)?></span><?php endif; ?></div>
+                <form class="form" method="post" action="cart.php">
+                    <label for="product-size">Escolha seu tamanho
+                        <select id="product-size" class="size-select" name="size_id" required>
+                            <option value="">Selecione o tamanho</option>
+                            <?php foreach ($sizes as $size): ?><option value="<?=$size['id']?>"><?=htmlspecialchars($size['name'])?></option><?php endforeach; ?>
+                        </select>
+                    </label>
+                    <?php if (!$sizes): ?><p id="feedback">Os tamanhos serão disponibilizados em breve.</p><?php else: ?><button type="submit">Adicionar ao carrinho <span aria-hidden="true">→</span></button><?php endif; ?>
+                    <p class="fine">Uma peça da história entre Belo Horizonte e Montana.</p>
+                </form>
+                <details class="measurements">
+                    <summary><?=htmlspecialchars(setting('measurements_title', 'Guia de medidas'))?></summary>
+                    <div class="measurements-body"><?=nl2br(htmlspecialchars(setting('measurements')))?>
+                    <?php foreach ($sizes as $size): if ($size['measurements']): ?><p><strong><?=htmlspecialchars($size['name'])?></strong> — <?=htmlspecialchars($size['measurements'])?></p><?php endif; endforeach; ?>
+                    </div>
+                </details>
             </div>
-            <form class="form" method="post" action="cart.php">
-                <div class="price"><?=money($price)?><?php if ($normalPrice !== $price): ?><span class="old-price"><?=money($normalPrice)?></span><?php endif; ?></div>
-                <label>ESCOLHA O TAMANHO<select class="size-select" name="size_id" required><option value="">Selecione</option><?php foreach ($sizes as $size): ?><option value="<?=$size['id']?>"><?=htmlspecialchars($size['name'])?><?= $size['measurements'] ? ' — '.htmlspecialchars($size['measurements']) : '' ?></option><?php endforeach; ?></select></label>
-                <?php if (!$sizes): ?><p id="feedback">Os tamanhos serão disponibilizados em breve.</p><?php else: ?><button>ADICIONAR AO CARRINHO</button><?php endif; ?>
-                <p class="fine">Peças limitadas. Preço, tamanhos e medidas são atualizados pelo painel da loja.</p>
-            </form>
         </div>
     </section>
     <footer class="foot"><span>© 406 REC. 2026</span><span>FOUR O SIX</span></footer>
