@@ -1,4 +1,8 @@
 <?php
-// Copie este arquivo para config.php no servidor e preencha apenas os dados da InfinitePay.
-// Nunca envie config.php com chaves reais ao GitHub.
-return ['infinitepay_handle' => '', 'webhook_url' => '', 'redirect_url' => ''];
+// Copie este arquivo para config.php no servidor.
+// A InfiniteTag deve ser informada sem o símbolo $.
+return [
+    'infinitepay_handle' => 'f406',
+    'webhook_url' => 'https://store.406rec.com/webhook.php',
+    'redirect_url' => 'https://store.406rec.com/payment-return.php',
+];
