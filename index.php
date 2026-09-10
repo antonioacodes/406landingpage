@@ -117,17 +117,6 @@ $normalPrice = (int) setting('price_cents');
             background: radial-gradient(circle at 72% 42%, #6c1018 0, transparent 24%), linear-gradient(120deg, #070605 30%, #1c080a 100%)
         }
 
-        .hero:after {
-            content: '406';
-            z-index: -1;
-            position: absolute;
-            right: -.04em;
-            top: .02em;
-            font: clamp(260px, 45vw, 700px)/.7 Anton, sans-serif;
-            color: #ffffff08;
-            letter-spacing: -.08em
-        }
-
         .kicker,
         .label {
             font: 11px 'DM Mono';
@@ -179,9 +168,9 @@ $normalPrice = (int) setting('price_cents');
         .product {
             z-index: 0;
             position: absolute;
-            inset: 6% 3% 0 auto;
-            width: min(52vw, 720px);
-            height: 82%;
+            inset: 3% 1% 0 auto;
+            width: min(60vw, 900px);
+            height: 90%;
             object-fit: contain;
             object-position: center;
             filter: drop-shadow(0 45px 38px #000);
@@ -325,6 +314,41 @@ $normalPrice = (int) setting('price_cents');
             margin: 0
         }
 
+        .drop-product-wrap {
+            margin: 28px 0 34px;
+            min-height: 420px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(145deg, #d7cec1, #f2ece4);
+            overflow: hidden;
+        }
+
+        .drop-product {
+            width: 100%;
+            height: 500px;
+            object-fit: contain;
+            filter: drop-shadow(0 28px 24px #0005);
+        }
+
+        .limited {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 10px 0 6px;
+            color: #9e171d;
+            font: 700 11px 'DM Mono';
+            letter-spacing: .14em;
+        }
+
+        .limited:before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--r);
+            box-shadow: 0 0 0 5px #d1272f18;
+        }
+
         .form {
             display: grid;
             gap: 15px
@@ -442,6 +466,9 @@ $normalPrice = (int) setting('price_cents');
                 padding: 72px 0
             }
 
+            .drop-product-wrap { min-height: 320px; }
+            .drop-product { height: 380px; }
+
             .foot {
                 padding: 22px 7vw
             }
@@ -450,10 +477,6 @@ $normalPrice = (int) setting('price_cents');
                 bottom: 20px
             }
 
-            .hero:after {
-                font-size: 360px;
-                top: 140px
-            }
         }
     </style>
 </head>
@@ -500,14 +523,16 @@ $normalPrice = (int) setting('price_cents');
             <div>
                 <div class="label">DROP 001 / DISPONÍVEL</div>
                 <h2><?=htmlspecialchars(setting('product_name'))?></h2>
+                <div class="limited">PEÇAS LIMITADAS</div>
+                <div class="drop-product-wrap"><img class="drop-product" src="assets/shirt.png" alt="Camisa 406 Montana"></div>
                 <p><?=nl2br(htmlspecialchars(setting('product_description')))?></p>
                 <div class="measurements"><strong><?=htmlspecialchars(setting('measurements_title'))?></strong><br><?=nl2br(htmlspecialchars(setting('measurements')))?></div>
             </div>
             <form class="form" method="post" action="cart.php">
                 <div class="price"><?=money($price)?><?php if ($normalPrice !== $price): ?><span class="old-price"><?=money($normalPrice)?></span><?php endif; ?></div>
-                <label>ESCOLHA O TAMANHO<select class="size-select" name="size_id" required><option value="">Selecione</option><?php foreach ($sizes as $size): ?><option value="<?=$size['id']?>"><?=htmlspecialchars($size['name'])?> — <?=$size['stock']?> disponível<?= $size['measurements'] ? ' / '.htmlspecialchars($size['measurements']) : '' ?></option><?php endforeach; ?></select></label>
+                <label>ESCOLHA O TAMANHO<select class="size-select" name="size_id" required><option value="">Selecione</option><?php foreach ($sizes as $size): ?><option value="<?=$size['id']?>"><?=htmlspecialchars($size['name'])?><?= $size['measurements'] ? ' — '.htmlspecialchars($size['measurements']) : '' ?></option><?php endforeach; ?></select></label>
                 <?php if (!$sizes): ?><p id="feedback">Os tamanhos serão disponibilizados em breve.</p><?php else: ?><button>ADICIONAR AO CARRINHO</button><?php endif; ?>
-                <p class="fine">Preço, tamanhos, estoque e medidas são atualizados pelo painel da loja.</p>
+                <p class="fine">Peças limitadas. Preço, tamanhos e medidas são atualizados pelo painel da loja.</p>
             </form>
         </div>
     </section>
