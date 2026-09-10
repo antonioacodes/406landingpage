@@ -208,17 +208,33 @@ function e(string $value): string {
         .payment-note{margin:22px 0 0;padding:14px;border:1px solid #bcb0a4;font-size:11px;line-height:1.5;color:#635850}
         @media(max-width:820px){main{grid-template-columns:1fr;gap:34px;margin-top:32px}.summary{position:static;order:-1}.field-row{grid-template-columns:1fr}.top{height:68px}.brand{font-size:34px}.trust{grid-template-columns:1fr}.product-card{grid-template-columns:110px 1fr}.product-card img{width:110px;height:130px}}
         @media(max-width:430px){.summary{padding:20px}main{width:min(94vw,1240px)}h1{font-size:58px}.coupon-row{grid-template-columns:1fr}.product-card{gap:14px}}
-    </style>
+    
+/* Shared store identity and compact purchase controls. */
+.brand{display:flex;align-items:center;justify-content:center;width:88px;height:54px;overflow:hidden}
+.brand img{display:block;width:100%;height:100%;object-fit:contain;transform:scale(1.55)}
+h1{font:600 clamp(30px,4vw,46px)/1.15 Inter,Arial,sans-serif;letter-spacing:-.04em;margin:14px 0 24px}
+.summary{border-radius:8px;box-shadow:none}
+.summary h2,.summary-head strong{font:600 20px/1.3 Inter,Arial,sans-serif;letter-spacing:-.02em}
+.item img,.product-card img{background:transparent}
+input,select{font-size:16px;border-radius:4px;min-width:0}
+.button,.pay-button{min-height:52px;height:auto;border-radius:4px;font:600 13px/1.5 Inter,Arial,sans-serif;letter-spacing:0}
+.checkout-form{align-content:start;grid-auto-rows:max-content}
+.lead{font-size:14px;line-height:1.7}
+.back{font:500 11px/1.5 Inter,Arial,sans-serif;letter-spacing:0}
+.product-card>div,.item>div{min-width:0;overflow-wrap:anywhere}
+@media(max-width:820px){.summary{order:0}.brand{height:48px;width:78px}h1{font-size:32px}.top{gap:16px}.back{text-align:right}.summary-head{gap:14px;flex-wrap:wrap}}
+
+</style>
 </head>
 <body>
 <header class="top">
-    <a class="brand" href="index.php">4<em>0</em>6</a>
+    <a class="brand" href="index.php" aria-label="406 REC — voltar à loja"><img src="assets/logo406.png" alt="406 REC"></a>
     <a class="back" href="cart.php">← VOLTAR AO CARRINHO</a>
 </header>
 <main>
     <section>
         <div class="eyebrow">CHECKOUT / PEDIDO SEGURO</div>
-        <h1>FINALIZE<br>SUA COMPRA.</h1>
+        <h1>Finalize sua compra.</h1>
         <p class="lead">Informe seus dados e continue para o ambiente seguro da InfinitePay. O pagamento é confirmado automaticamente no seu pedido.</p>
 
         <form class="checkout-form" method="post" novalidate>
