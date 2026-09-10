@@ -11,7 +11,23 @@ $normalPrice = (int) setting('price_cents');
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>406 Montana — Drop 001</title>
+    <title>406 Montana — Camiseta oficial | 406 Store</title>
+    <meta name="description" content="Conheça a camiseta oficial 406 Montana. Drop limitado do coletivo 406rec, conectando Belo Horizonte e Montana. Escolha seu tamanho.">
+    <link rel="canonical" href="https://store.406rec.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:site_name" content="406 Store">
+    <meta property="og:url" content="https://store.406rec.com/">
+    <meta property="og:title" content="406 Montana — Camiseta oficial">
+    <meta property="og:description" content="Vista o ciclo. Conheça a camiseta 406 Montana — peças limitadas do coletivo 406rec.">
+    <meta property="og:image" content="https://store.406rec.com/assets/logo406.png">
+    <meta property="og:image:secure_url" content="https://store.406rec.com/assets/logo406.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:alt" content="Logo 406rec">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="406 Montana — Camiseta oficial">
+    <meta name="twitter:description" content="Vista o ciclo. Camiseta 406 Montana — peças limitadas.">
+    <meta name="twitter:image" content="https://store.406rec.com/assets/logo406.png">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&family=Inter:wght@400;600;800&display=swap');
 
