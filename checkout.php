@@ -112,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
         }
 
         $phoneNumber = preg_replace('/\D+/', '', $form['phone']);
-        if ($phoneNumber !== '' && !str_starts_with($phoneNumber, '55')) {
+        if (strlen($phoneNumber) === 10 || strlen($phoneNumber) === 11) {
             $phoneNumber = '55' . $phoneNumber;
         }
 
@@ -129,17 +129,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
             'customer' => [
                 'name' => $form['name'],
                 'email' => $form['email'],
-                'phone_number' => '+' . $phoneNumber,
+                
             ],
         ];
 
+        if (preg_match('/^55[0-9]{10,11}$/', $phoneNumber)) {
+            $payload['customer']['phone_number'] = '+' . $phoneNumber;
+        }
         $curl = curl_init('https://api.checkout.infinitepay.io/links');
         curl_setopt_array($curl, [
             CURLOPT_POST => true,
             CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
             CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 20,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 30,
         ]);
         $rawResponse = (string)curl_exec($curl);
         $httpCode = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -148,6 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
         $response = json_decode($rawResponse, true);
 
         if ($httpCode >= 200 && $httpCode < 300 && !empty($response['url'])) {
+            save_setting('checkout_last_error', '');
             $pdo->prepare('UPDATE orders SET gateway_url=? WHERE order_nsu=?')
                 ->execute([$response['url'], $orderNsu]);
             $pdo->prepare('UPDATE carts SET status="checkout", updated_at=CURRENT_TIMESTAMP WHERE id=?')
@@ -157,7 +162,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
         }
 
         $error = 'Não foi possível abrir o pagamento agora. Tente novamente em alguns instantes.';
-        error_log('InfinitePay checkout error: HTTP ' . $httpCode . ' / ' . $curlError . ' / ' . $rawResponse);
+        $reason = $httpCode === 0 ? 'Falha de conexão com a InfinitePay. Verifique DNS, cURL e certificado TLS da VPS.'
+            : (($httpCode === 401 || $httpCode === 403) ? 'Acesso recusado pela InfinitePay. Confira a InfiniteTag da conta em config.php.'
+            : (($httpCode === 400 || $httpCode === 422) ? 'A InfinitePay recusou os dados enviados. Confira InfiniteTag, valor e dados do comprador.'
+            : 'A InfinitePay retornou uma resposta inesperada.'));
+        $reference = 'HTTP ' . $httpCode . ' / pedido ' . $orderNsu;
+        save_setting('checkout_last_error', date('d/m/Y H:i') . ' — ' . $reference . ' — ' . $reason);
+        $error .= ' Referência: ' . $orderNsu . ' (HTTP ' . $httpCode . ').';
+        error_log('InfinitePay checkout error: ' . $reference . ' / cURL: ' . $curlError . ' / ' . $rawResponse);
     }
 }
 
