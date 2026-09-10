@@ -490,11 +490,11 @@ $normalPrice = (int) setting('price_cents');
             <a class="brand-mark brand-gg" href="#top" aria-label="GG — designer da camiseta"><img src="assets/GG_v3.png" alt="GG, designer da camiseta"></a>
         </nav>
         <div class="hero-copy">
-            <div class="kicker">PRÉ-VENDA LIMITADA / 2026</div>
+            <div class="kicker">DROP LIMITADO / DISPONÍVEL</div>
             <h1>VISTA<br>O <em>CICLO.</em></h1>
             <p>406 Montana não é só uma camiseta. É o primeiro uniforme de quem continua avançando — sem se esquecer de onde veio.</p><a class="button" href="#lista">VER A PEÇA →</a>
         </div><img class="product animate-bounce" src="assets/shirt.png" alt="Camisa 406 Montana com arte de ouroboros">
-        <div class="serial">FOUR O SIX / PRE-ORDER 001</div>
+        <div class="serial">FOUR O SIX / DROP 001</div>
     </section>
     <div class="ticker"><span>406 MONTANA ✦ CAMISAS LIMITADAS ✦ OUROBOROS ✦ BELO HORIZONTE ↔ MONTANA ✦ 406 MONTANA ✦
             CAMISAS LIMITADAS ✦ OUROBOROS ✦ BELO HORIZONTE ↔ MONTANA ✦ </span></div>
