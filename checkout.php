@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
             $handle = 'f406';
         }
 
-        $baseUrl = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'store.406rec.com');
+        $baseUrl = 'https://store.406rec.com';
         $redirectUrl = trim((string)($config['redirect_url'] ?? ''));
         $webhookUrl = trim((string)($config['webhook_url'] ?? ''));
         if ($redirectUrl === '') {
@@ -244,7 +244,7 @@ function e(string $value): string {
             <label>CUPOM DE DESCONTO
                 <span class="coupon-row">
                     <input name="coupon" value="<?=e($coupon)?>" placeholder="DIGITE O CÓDIGO">
-                    <button type="submit" name="apply_coupon" value="1">APLICAR</button>
+                    <button type="submit" name="apply_coupon" value="1" formnovalidate>APLICAR</button>
                 </span>
             </label>
             <?php if ($couponMessage): ?><p class="coupon-message"><?=e($couponMessage)?></p><?php endif; ?>
