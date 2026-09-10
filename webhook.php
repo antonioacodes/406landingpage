@@ -40,7 +40,7 @@ if ($orderNsu === '' || $transactionNsu === '' || $slug === '') {
 }
 
 $pdo = db();
-$stmt = $pdo->prepare('SELECT id, cart_id, total_cents FROM orders WHERE order_nsu=? LIMIT 1');
+$stmt = $pdo->prepare('SELECT id, cart_id, total_cents, status FROM orders WHERE order_nsu=? LIMIT 1');
 $stmt->execute([$orderNsu]);
 $order = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$order) {
@@ -56,7 +56,16 @@ if (empty($verification['success']) || empty($verification['paid']) || $amount !
 }
 
 $pdo->beginTransaction();
-$pdo->prepare("UPDATE orders SET status='paid' WHERE id=?")->execute([(int)$order['id']]);
+$paidUpdate = $pdo->prepare("UPDATE orders SET status='paid' WHERE id=? AND status!='paid'");
+$paidUpdate->execute([(int)$order['id']]);
+if ($paidUpdate->rowCount() > 0 && !empty($order['cart_id'])) {
+    $pdo->prepare(
+        'UPDATE sizes SET stock = MAX(0, stock - COALESCE((
+            SELECT SUM(ci.quantity) FROM cart_items ci
+            WHERE ci.cart_id=? AND ci.size_id=sizes.id
+        ),0)) WHERE id IN (SELECT size_id FROM cart_items WHERE cart_id=?)'
+    )->execute([(int)$order['cart_id'], (int)$order['cart_id']]);
+}
 if (!empty($order['cart_id'])) {
     $pdo->prepare("UPDATE carts SET status='converted', updated_at=CURRENT_TIMESTAMP WHERE id=?")
         ->execute([(int)$order['cart_id']]);
