@@ -222,7 +222,6 @@ function e(string $value): string {
         <p class="lead">Informe seus dados e continue para o ambiente seguro da InfinitePay. O pagamento é confirmado automaticamente no seu pedido.</p>
 
         <form class="checkout-form" method="post" novalidate>
-            <input type="hidden" name="finish_order" value="1">
             <?php if ($error): ?><div class="error"><?=e($error)?></div><?php endif; ?>
 
             <div class="field-row">
@@ -250,7 +249,7 @@ function e(string $value): string {
             </label>
             <?php if ($couponMessage): ?><p class="coupon-message"><?=e($couponMessage)?></p><?php endif; ?>
 
-            <button class="pay-button" type="submit">
+            <button class="pay-button" type="submit" name="finish_order" value="1">
                 <span class="pix-mark" aria-hidden="true"></span>
                 CONTINUAR PARA O PAGAMENTO
             </button>
