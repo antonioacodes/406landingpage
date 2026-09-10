@@ -38,9 +38,26 @@ if (!isset($_SESSION['admin_id'])) {
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 80% 20%,#491016,transparent 28%),#090807;color:#f3ece4;font-family:Inter,Arial;display:grid;place-items:center}
 .login{width:min(430px,90vw);background:#15110f;border:1px solid #392d28;padding:38px;box-shadow:0 30px 90px #0008}.mark{font:64px "Bebas Neue";letter-spacing:.08em}.mark em{color:#d1272f;font-style:normal}.eyebrow{font:10px "DM Mono";letter-spacing:.15em;color:#e86b6d}.login h1{font:42px "Bebas Neue";margin:22px 0 5px}.login p{color:#9f9389;font-size:13px}.login form{display:grid;gap:13px;margin-top:28px}input,button{padding:15px;border:1px solid #493a34;background:#0c0a09;color:#fff;font:14px Inter}button{border:0;background:#c6222a;font:700 11px "DM Mono";letter-spacing:.1em;cursor:pointer}.err{color:#ff9a9d!important}
+
+.mark,.logo{width:96px;height:60px;display:flex;align-items:center;overflow:hidden}
+.mark img,.logo img{width:100%;height:100%;object-fit:contain;transform:scale(1.55)}
+.panel,.stack,.grid,.metrics,.metric,.row,form,label,.table-wrap{min-width:0;max-width:100%}
+input,textarea,select{font-size:16px;box-sizing:border-box}
+input[type=checkbox]{width:22px;height:22px}
+@media(max-width:760px){
+.content{padding:22px 16px 50px}.sidebar{padding:12px 16px;gap:10px}
+.nav{display:flex;grid-column:1/-1;grid-row:2;overflow-x:auto;gap:6px;max-width:100%;padding-bottom:4px}
+.nav a{white-space:nowrap;padding:10px;font-size:10px}.logout{grid-column:2;grid-row:1}
+.topbar h1{font:600 26px/1.15 Inter,Arial,sans-serif;overflow-wrap:anywhere}
+.metric{padding:14px;min-height:95px}.metric strong{font:600 26px/1.2 Inter,Arial,sans-serif;overflow-wrap:anywhere}
+.metric.featured{grid-column:1/-1}.metric span{line-height:1.5;font-size:9px}
+.panel-head{flex-direction:column;gap:12px}.panel h2{font:600 20px/1.25 Inter,Arial,sans-serif}
+.price-preview{width:100%}.table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+th,td{padding:12px 8px}button{min-height:44px}
+}
 </style>
 </head>
-<body><section class="login"><div class="mark">4<em>0</em>6</div><div class="eyebrow">PAINEL DA LOJA</div><h1>ENTRAR</h1><p>Gerencie produto, estoque, cupons e pedidos.</p><form method="post"><input name="email" type="email" placeholder="E-mail" required autofocus><input name="password" type="password" placeholder="Senha" required><button>ACESSAR DASHBOARD</button><?php if ($error): ?><p class="err"><?=htmlspecialchars($error)?></p><?php endif; ?></form></section></body>
+<body><section class="login"><div class="mark"><img src="assets/logo406.png" alt="406 REC"></div><div class="eyebrow">PAINEL DA LOJA</div><h1>ENTRAR</h1><p>Gerencie produto, estoque, cupons e pedidos.</p><form method="post"><input name="email" type="email" placeholder="E-mail" required autofocus><input name="password" type="password" placeholder="Senha" required><button>ACESSAR DASHBOARD</button><?php if ($error): ?><p class="err"><?=htmlspecialchars($error)?></p><?php endif; ?></form></section></body>
 </html><?php
     exit;
 }
@@ -131,12 +148,29 @@ form{display:grid;gap:13px}.row{display:grid;grid-template-columns:1fr 1fr;gap:1
 .table-wrap{overflow:auto;margin-top:18px}table{width:100%;border-collapse:collapse;white-space:nowrap}th,td{padding:13px 10px;text-align:left;border-bottom:1px solid #332923}th{color:#83786f;font:500 9px "DM Mono";letter-spacing:.1em}td{font-size:12px}.table-input{min-width:80px;padding:8px}.status{display:inline-block;padding:6px 8px;border-radius:20px;background:#4b3515;color:#f1cd85;font:9px "DM Mono";text-transform:uppercase}.status.paid{background:#153c24;color:#93e6ae}.empty{padding:30px 0;text-align:center;color:#81766d;font-size:12px}.price-preview{padding:16px;background:#0d0b0a;border:1px solid var(--line)}.price-preview span{display:block;color:#8e8279;font:9px "DM Mono";letter-spacing:.1em}.price-preview strong{display:block;margin-top:6px;font:32px "Bebas Neue"}
 @media(max-width:1120px){.metrics{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr}}
 @media(max-width:760px){.layout{display:block}.sidebar{position:static;height:auto;padding:18px 5vw;display:grid;grid-template-columns:1fr auto;align-items:center}.logo{font-size:42px}.side-label,.nav{display:none}.logout{margin:0}.content{padding:25px 5vw 60px}.topbar{align-items:start}.topbar h1{font-size:42px}.metrics{grid-template-columns:1fr 1fr}.metric{min-height:100px}.row{grid-template-columns:1fr}.panel{padding:18px}.visit{display:none}}
+
+.mark,.logo{width:96px;height:60px;display:flex;align-items:center;overflow:hidden}
+.mark img,.logo img{width:100%;height:100%;object-fit:contain;transform:scale(1.55)}
+.panel,.stack,.grid,.metrics,.metric,.row,form,label,.table-wrap{min-width:0;max-width:100%}
+input,textarea,select{font-size:16px;box-sizing:border-box}
+input[type=checkbox]{width:22px;height:22px}
+@media(max-width:760px){
+.content{padding:22px 16px 50px}.sidebar{padding:12px 16px;gap:10px}
+.nav{display:flex;grid-column:1/-1;grid-row:2;overflow-x:auto;gap:6px;max-width:100%;padding-bottom:4px}
+.nav a{white-space:nowrap;padding:10px;font-size:10px}.logout{grid-column:2;grid-row:1}
+.topbar h1{font:600 26px/1.15 Inter,Arial,sans-serif;overflow-wrap:anywhere}
+.metric{padding:14px;min-height:95px}.metric strong{font:600 26px/1.2 Inter,Arial,sans-serif;overflow-wrap:anywhere}
+.metric.featured{grid-column:1/-1}.metric span{line-height:1.5;font-size:9px}
+.panel-head{flex-direction:column;gap:12px}.panel h2{font:600 20px/1.25 Inter,Arial,sans-serif}
+.price-preview{width:100%}.table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+th,td{padding:12px 8px}button{min-height:44px}
+}
 </style>
 </head>
 <body>
 <div class="layout">
 <aside class="sidebar">
-    <div><div class="logo">4<em>0</em>6</div><div class="side-label">STORE CONTROL</div></div>
+    <div><div class="logo"><img src="assets/logo406.png" alt="406 REC"></div><div class="side-label">STORE CONTROL</div></div>
     <nav class="nav"><a href="#dashboard">DASHBOARD</a><a href="#pedidos">PEDIDOS</a><a href="#produto">PRODUTO E PREÇO</a><a href="#estoque">TAMANHOS E ESTOQUE</a><a href="#cupons">CUPONS</a></nav>
     <a class="logout" href="?logout=1">SAIR DO PAINEL</a>
 </aside>
@@ -144,6 +178,7 @@ form{display:grid;gap:13px}.row{display:grid;grid-template-columns:1fr 1fr;gap:1
     <header class="topbar"><div><div class="eyebrow">VISÃO GERAL</div><h1>DASHBOARD DA LOJA</h1></div><a class="visit" href="index.php" target="_blank">ABRIR LOJA ↗</a></header>
     <?php if ($message): ?><div class="notice <?=$messageType === 'error' ? 'error' : ''?>"><?=esc($message)?></div><?php endif; ?>
 
+    <?php if (setting('checkout_last_error') !== ''): ?><div class="notice error" role="status"><strong>Última tentativa de pagamento:</strong> <?=esc(setting('checkout_last_error'))?></div><?php endif; ?>
     <section class="metrics">
         <article class="metric"><span>CADASTROS</span><strong><?=$stats['customers']?></strong></article>
         <article class="metric"><span>CARRINHOS ABERTOS</span><strong><?=$stats['open_carts']?></strong></article>
