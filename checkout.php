@@ -183,11 +183,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
         }
 
         $error = 'Não foi possível abrir o pagamento agora. Tente novamente em alguns instantes.';
-        $reason = $httpCode === 0 ? 'Falha de conexão com a InfinitePay. Verifique DNS, cURL e certificado TLS da VPS.'
-            : (($httpCode === 401 || $httpCode === 403) ? 'Acesso recusado pela InfinitePay. Confira a InfiniteTag da conta em config.php.'
-            : ($httpCode === 404 ? 'O Checkout Integrado não está habilitado para esta InfiniteTag. Ative-o no app da InfinitePay em Vendas > Checkout > Configurações.'
-            : (($httpCode === 400 || $httpCode === 422) ? 'A InfinitePay recusou os dados enviados. Confira InfiniteTag, valor e dados do comprador.'
-            : 'A InfinitePay retornou uma resposta inesperada.')));
+        if ($httpCode === 0) {
+            $reason = 'Falha de conexão com a InfinitePay. Verifique DNS, cURL e certificado TLS da VPS.';
+        } elseif ($httpCode === 401 || $httpCode === 403) {
+            $reason = 'Acesso recusado pela InfinitePay. Confira a InfiniteTag da conta em config.php.';
+        } elseif ($httpCode === 404) {
+            $reason = 'O Checkout Integrado não está habilitado para esta InfiniteTag. Ative-o no app da InfinitePay em Vendas > Checkout > Configurações.';
+        } elseif ($httpCode === 400 || $httpCode === 422) {
+            $reason = 'A InfinitePay recusou os dados enviados. Confira InfiniteTag, valor e dados do comprador.';
+        } else {
+            $reason = 'A InfinitePay retornou uma resposta inesperada.';
+        }
         $reference = 'HTTP ' . $httpCode . ' / pedido ' . $orderNsu;
         save_setting('checkout_last_error', date('d/m/Y H:i') . ' — ' . $reference . ' — ' . $reason);
         $error .= ' Referência: ' . $orderNsu . ' (HTTP ' . $httpCode . ').';
