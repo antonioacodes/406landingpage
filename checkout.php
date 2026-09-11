@@ -150,7 +150,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
             'customer' => [
                 'name' => $form['name'],
                 'email' => $form['email'],
-                
+            ],
+            'address' => [
+                'cep' => digits($form['cep']),
+                'number' => $form['address_number'],
+                'complement' => $form['address_extra'],
             ],
         ];
 
