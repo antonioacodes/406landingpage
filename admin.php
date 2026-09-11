@@ -3,6 +3,14 @@ declare(strict_types=1);
 session_start();
 require __DIR__ . '/database.php';
 
+function send_tracking_email(string $to, string $orderNsu, string $tracking): bool {
+    $config = is_file(__DIR__ . '/config.php') ? require __DIR__ . '/config.php' : [];
+    $from = trim((string)($config['mail_from'] ?? 'vendas@store.406rec.com'));
+    $subject = 'Seu pedido 406 foi enviado';
+    $message = "Olá!\n\nSeu pedido {$orderNsu} foi postado.\nCódigo de rastreio: {$tracking}\n\nAcompanhe em: https://rastreamento.correios.com.br/app/index.php\n\n406 REC";
+    return @mail($to, $subject, $message, "From: {$from}\r\nContent-Type: text/plain; charset=UTF-8");
+}
+
 $pdo = db();
 $adminCount = (int)$pdo->query('SELECT COUNT(*) FROM admins')->fetchColumn();
 if ($adminCount === 0) {
@@ -94,6 +102,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ->execute([strtoupper(trim((string)$_POST['code'])), $kind, max(0, (int)$_POST['value'])]);
             $message = 'Cupom criado.';
         }
+        if ($action === 'tracking') {
+            $orderId = (int)($_POST['order_id'] ?? 0);
+            $tracking = strtoupper(trim((string)($_POST['tracking_code'] ?? '')));
+            if ($orderId < 1 || $tracking === '') throw new RuntimeException('Código inválido.');
+            $pdo->prepare('UPDATE shipments SET tracking_code=?, shipped_at=COALESCE(shipped_at,CURRENT_TIMESTAMP) WHERE order_id=?')->execute([$tracking, $orderId]);
+            $customer = $pdo->prepare('SELECT c.email,o.order_nsu FROM orders o JOIN customers c ON c.id=o.customer_id WHERE o.id=?');
+            $customer->execute([$orderId]);
+            $recipient = $customer->fetch(PDO::FETCH_ASSOC);
+            $sent = $recipient ? send_tracking_email((string)$recipient['email'], (string)$recipient['order_nsu'], $tracking) : false;
+            if ($sent) $pdo->prepare('UPDATE shipments SET tracking_email_sent_at=CURRENT_TIMESTAMP WHERE order_id=?')->execute([$orderId]);
+            $message = $sent ? 'Rastreio salvo e e-mail enviado ao cliente.' : 'Rastreio salvo. O e-mail não saiu; confira o envio de e-mails da VPS.';
+        }
     } catch (Throwable $exception) {
         $message = 'Não foi possível salvar. Verifique se o código ou tamanho já existe.';
         $messageType = 'error';
@@ -110,8 +130,9 @@ $stats = [
 $sizes = $pdo->query('SELECT * FROM sizes ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
 $coupons = $pdo->query('SELECT * FROM coupons ORDER BY id DESC')->fetchAll(PDO::FETCH_ASSOC);
 $recentOrders = $pdo->query(
-    'SELECT o.*, c.name AS customer_name, c.email AS customer_email
+    'SELECT o.*, c.name AS customer_name, c.email AS customer_email, sh.service_name, sh.shipping_cents, sh.tracking_code, sh.tracking_email_sent_at
      FROM orders o LEFT JOIN customers c ON c.id=o.customer_id
+     LEFT JOIN shipments sh ON sh.order_id=o.id
      ORDER BY o.id DESC LIMIT 12'
 )->fetchAll(PDO::FETCH_ASSOC);
 
@@ -145,7 +166,7 @@ function status_label(string $status): string {
 .metrics{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:13px;margin-bottom:24px}.metric{min-height:118px;padding:18px;background:linear-gradient(145deg,var(--panel2),var(--panel));border:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between}.metric span{font:10px "DM Mono";letter-spacing:.11em;color:#8f837a}.metric strong{font:38px "Bebas Neue";letter-spacing:.04em}.metric.featured{background:linear-gradient(145deg,#b51d24,#721218);border-color:#db3d44}
 .grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(310px,.75fr);gap:20px;align-items:start}.stack{display:grid;gap:20px}.panel{background:var(--panel);border:1px solid var(--line);padding:24px}.panel-head{display:flex;align-items:start;justify-content:space-between;gap:20px;margin-bottom:22px}.panel h2{font:32px/1 "Bebas Neue";letter-spacing:.04em;margin:0}.panel .hint{color:var(--muted);font-size:11px;line-height:1.5;margin-top:5px}
 form{display:grid;gap:13px}.row{display:grid;grid-template-columns:1fr 1fr;gap:13px}label{display:grid;gap:7px;color:#aa9e94;font:500 10px "DM Mono";letter-spacing:.08em}input,textarea,select{width:100%;padding:12px;border:1px solid #493a33;background:#0c0a09;color:#fff;font:14px Inter;outline:0}input:focus,textarea:focus,select:focus{border-color:#d55258}textarea{min-height:100px;resize:vertical}button{padding:13px 16px;border:0;background:var(--red);color:#fff;font:700 10px "DM Mono";letter-spacing:.1em;cursor:pointer}button:hover{background:#ec353e}.secondary{background:#2a211d}
-.table-wrap{overflow:auto;margin-top:18px}table{width:100%;border-collapse:collapse;white-space:nowrap}th,td{padding:13px 10px;text-align:left;border-bottom:1px solid #332923}th{color:#83786f;font:500 9px "DM Mono";letter-spacing:.1em}td{font-size:12px}.table-input{min-width:80px;padding:8px}.status{display:inline-block;padding:6px 8px;border-radius:20px;background:#4b3515;color:#f1cd85;font:9px "DM Mono";text-transform:uppercase}.status.paid{background:#153c24;color:#93e6ae}.empty{padding:30px 0;text-align:center;color:#81766d;font-size:12px}.price-preview{padding:16px;background:#0d0b0a;border:1px solid var(--line)}.price-preview span{display:block;color:#8e8279;font:9px "DM Mono";letter-spacing:.1em}.price-preview strong{display:block;margin-top:6px;font:32px "Bebas Neue"}
+.table-wrap{overflow:auto;margin-top:18px}.tracking-form{display:flex;gap:6px;margin-top:7px;min-width:220px}.tracking-form input{padding:7px;font-size:12px}.tracking-form button{padding:7px 9px;font-size:9px}table{width:100%;border-collapse:collapse;white-space:nowrap}th,td{padding:13px 10px;text-align:left;border-bottom:1px solid #332923}th{color:#83786f;font:500 9px "DM Mono";letter-spacing:.1em}td{font-size:12px}.table-input{min-width:80px;padding:8px}.status{display:inline-block;padding:6px 8px;border-radius:20px;background:#4b3515;color:#f1cd85;font:9px "DM Mono";text-transform:uppercase}.status.paid{background:#153c24;color:#93e6ae}.empty{padding:30px 0;text-align:center;color:#81766d;font-size:12px}.price-preview{padding:16px;background:#0d0b0a;border:1px solid var(--line)}.price-preview span{display:block;color:#8e8279;font:9px "DM Mono";letter-spacing:.1em}.price-preview strong{display:block;margin-top:6px;font:32px "Bebas Neue"}
 @media(max-width:1120px){.metrics{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr}}
 @media(max-width:760px){.layout{display:block}.sidebar{position:static;height:auto;padding:18px 5vw;display:grid;grid-template-columns:1fr auto;align-items:center}.logo{font-size:42px}.side-label,.nav{display:none}.logout{margin:0}.content{padding:25px 5vw 60px}.topbar{align-items:start}.topbar h1{font-size:42px}.metrics{grid-template-columns:1fr 1fr}.metric{min-height:100px}.row{grid-template-columns:1fr}.panel{padding:18px}.visit{display:none}}
 
@@ -192,8 +213,8 @@ th,td{padding:12px 8px}button{min-height:44px}
             <section class="panel" id="pedidos">
                 <div class="panel-head"><div><h2>PEDIDOS RECENTES</h2><div class="hint">Últimos pagamentos gerados pelo checkout.</div></div></div>
                 <?php if (!$recentOrders): ?><div class="empty">Nenhum pedido foi gerado ainda.</div><?php else: ?>
-                <div class="table-wrap"><table><thead><tr><th>PEDIDO</th><th>CLIENTE</th><th>TOTAL</th><th>STATUS</th><th>DATA</th></tr></thead><tbody>
-                <?php foreach ($recentOrders as $order): ?><tr><td><?=esc((string)$order['order_nsu'])?></td><td><?=esc((string)($order['customer_name'] ?: $order['customer_email']))?></td><td><?=money((int)$order['total_cents'])?></td><td><span class="status <?=esc((string)$order['status'])?>"><?=esc(status_label((string)$order['status']))?></span></td><td><?=date('d/m/Y H:i', strtotime((string)$order['created_at']))?></td></tr><?php endforeach; ?>
+                <div class="table-wrap"><table><thead><tr><th>PEDIDO</th><th>CLIENTE</th><th>TOTAL</th><th>STATUS</th><th>FRETE / RASTREIO</th><th>DATA</th></tr></thead><tbody>
+                <?php foreach ($recentOrders as $order): ?><tr><td><?=esc((string)$order['order_nsu'])?></td><td><?=esc((string)($order['customer_name'] ?: $order['customer_email']))?></td><td><?=money((int)$order['total_cents'])?></td><td><span class="status <?=esc((string)$order['status'])?>"><?=esc(status_label((string)$order['status']))?></span></td><td><?php if ($order['service_name']): ?><small><?=esc((string)$order['service_name'])?></small><form method="post" class="tracking-form"><input type="hidden" name="action" value="tracking"><input type="hidden" name="order_id" value="<?=(int)$order['id']?>"><input name="tracking_code" value="<?=esc((string)$order['tracking_code'])?>" placeholder="Código de rastreio"><button>ENVIAR</button></form><?php else: ?>—<?php endif; ?></td><td><?=date('d/m/Y H:i', strtotime((string)$order['created_at']))?></td></tr><?php endforeach; ?>
                 </tbody></table></div><?php endif; ?>
             </section>
 
