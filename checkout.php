@@ -52,6 +52,7 @@ if ($coupon !== '') {
 }
 
 $total = max(0, $subtotal - $discount);
+$shippingEnabled = setting('shipping_enabled', '0') === '1';
 $error = '';
 $form = [
     'name' => trim((string)($_POST['name'] ?? '')),
@@ -70,14 +71,16 @@ $form = [
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
     $password = (string)($_POST['password'] ?? '');
 
-    $shipping = selected_shipping($form['cep'], $form['shipping_code']);
+    $shipping = $shippingEnabled
+        ? selected_shipping($form['cep'], $form['shipping_code'])
+        : ['code' => 'manual', 'name' => 'Frete a combinar', 'cents' => 0];
     if ($form['name'] === '' || !filter_var($form['email'], FILTER_VALIDATE_EMAIL) || mb_strlen($password) < 8) {
         $error = 'Preencha nome, e-mail válido e uma senha de pelo menos 8 caracteres.';
     } elseif ($form['phone'] === '') {
         $error = 'Informe o telefone para contato sobre o pedido.';
     } elseif ($form['address_line'] === '' || $form['address_number'] === '' || $form['neighborhood'] === '' || $form['city'] === '' || strlen($form['state']) !== 2) {
         $error = 'Preencha o endereço completo para entrega.';
-    } elseif (!$shipping) {
+    } elseif ($shippingEnabled && !$shipping) {
         $error = 'Escolha uma opção de frete válida. Informe o CEP e clique em calcular.';
     } else {
         $shippingCents = (int)$shipping['cents'];
@@ -141,10 +144,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
         $payload = [
             'handle' => $handle,
             'order_nsu' => $orderNsu,
-            'items' => [
+            'items' => array_values(array_filter([
                 ['quantity' => 1, 'price' => max(0, $subtotal - $discount), 'description' => setting('product_name')],
-                ['quantity' => 1, 'price' => $shippingCents, 'description' => 'Frete — ' . $shipping['name']],
-            ],
+                $shippingCents > 0 ? ['quantity' => 1, 'price' => $shippingCents, 'description' => 'Frete — ' . $shipping['name']] : null,
+            ])),
             'redirect_url' => $redirectUrl,
             'webhook_url' => $webhookUrl,
             'customer' => [
@@ -164,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
         $curl = curl_init('https://api.checkout.infinitepay.io/links');
         curl_setopt_array($curl, [
             CURLOPT_POST => true,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json'],
             CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => 10,
@@ -299,9 +302,13 @@ input,select{font-size:16px;border-radius:4px;min-width:0}
 
             <fieldset class="shipping-fields">
                 <legend>ENTREGA</legend>
-                <div class="field-row"><label>CEP<input id="cep" name="cep" inputmode="numeric" value="<?=e($form['cep'])?>" placeholder="00000-000" required></label><label>FRETE<select id="shipping-code" name="shipping_code" required><option value="">Informe o CEP primeiro</option></select></label></div>
-                <button class="secondary" type="button" id="quote-shipping">CALCULAR FRETE</button>
+                <label>CEP<input name="cep" inputmode="numeric" value="<?=e($form['cep'])?>" placeholder="00000-000" required></label>
+                <?php if ($shippingEnabled): ?>
+                <div class="field-row"><label>FRETE<select id="shipping-code" name="shipping_code" required><option value="">Informe o CEP primeiro</option></select></label><div class="quote-space"><button class="secondary" type="button" id="quote-shipping">CALCULAR FRETE</button></div></div>
                 <p class="coupon-message" id="shipping-message">O frete é calculado pelos Correios a partir de Belo Horizonte.</p>
+                <?php else: ?>
+                <p class="coupon-message">O frete será combinado após a confirmação do pedido.</p>
+                <?php endif; ?>
                 <label>RUA / AVENIDA<input name="address_line" value="<?=e($form['address_line'])?>" required></label>
                 <div class="field-row"><label>NÚMERO<input name="address_number" value="<?=e($form['address_number'])?>" required></label><label>COMPLEMENTO<input name="address_extra" value="<?=e($form['address_extra'])?>"></label></div>
                 <div class="field-row"><label>BAIRRO<input name="neighborhood" value="<?=e($form['neighborhood'])?>" required></label><label>CIDADE<input name="city" value="<?=e($form['city'])?>" required></label></div>
@@ -344,7 +351,7 @@ input,select{font-size:16px;border-radius:4px;min-width:0}
         <p class="payment-note">Você será direcionado para o checkout da InfinitePay. Pix e demais opções disponibilizadas pela sua conta são processados no ambiente seguro do gateway.</p>
     </aside>
 </main>
-<script>
+<?php if ($shippingEnabled): ?><script>
 const cep=document.getElementById('cep'), shippingSelect=document.getElementById('shipping-code'), shippingTotal=document.getElementById('shipping-total'), shippingMessage=document.getElementById('shipping-message');
 document.getElementById('quote-shipping').addEventListener('click', async () => {
   const value=cep.value.replace(/\D/g,'');
@@ -359,6 +366,6 @@ document.getElementById('quote-shipping').addEventListener('click', async () => 
   } catch(error) { shippingSelect.innerHTML='<option value="">Frete indisponível</option>';shippingMessage.textContent=error.message; }
 });
 shippingSelect.addEventListener('change',()=>{const o=shippingSelect.selectedOptions[0];shippingTotal.textContent=o&&o.dataset.cents?'R$ '+(Number(o.dataset.cents)/100).toLocaleString('pt-BR',{minimumFractionDigits:2}):'Calcular no CEP';});
-</script>
+</script><?php endif; ?>
 </body>
 </html>
