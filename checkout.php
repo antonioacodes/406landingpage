@@ -136,11 +136,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
             $webhookUrl = $baseUrl . '/webhook.php';
         }
 
-        $phoneNumber = preg_replace('/\D+/', '', $form['phone']);
-        if (strlen($phoneNumber) === 10 || strlen($phoneNumber) === 11) {
-            $phoneNumber = '55' . $phoneNumber;
-        }
-
         $payload = [
             'handle' => $handle,
             'order_nsu' => $orderNsu,
