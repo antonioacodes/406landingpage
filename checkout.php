@@ -150,20 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
             ])),
             'redirect_url' => $redirectUrl,
             'webhook_url' => $webhookUrl,
-            'customer' => [
-                'name' => $form['name'],
-                'email' => $form['email'],
-            ],
-            'address' => [
-                'cep' => digits($form['cep']),
-                'number' => $form['address_number'],
-                'complement' => $form['address_extra'],
-            ],
         ];
-
-        if (preg_match('/^55[0-9]{10,11}$/', $phoneNumber)) {
-            $payload['customer']['phone_number'] = '+' . $phoneNumber;
-        }
         $curl = curl_init('https://api.checkout.infinitepay.io/links');
         curl_setopt_array($curl, [
             CURLOPT_POST => true,
@@ -195,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
         } elseif ($httpCode === 401 || $httpCode === 403) {
             $reason = 'Acesso recusado pela InfinitePay. Confira a InfiniteTag da conta em config.php.';
         } elseif ($httpCode === 404) {
-            $reason = 'O Checkout Integrado não está habilitado para esta InfiniteTag. Ative-o no app da InfinitePay em Vendas > Checkout > Configurações.';
+            $reason = 'A InfinitePay não localizou o checkout para a InfiniteTag informada. Confira se a InfiniteTag no config.php é exatamente f406 e envie ao suporte a resposta registrada no log da VPS.';
         } elseif ($httpCode === 400 || $httpCode === 422) {
             $reason = 'A InfinitePay recusou os dados enviados. Confira InfiniteTag, valor e dados do comprador.';
         } else {
