@@ -42,6 +42,24 @@ function db(): PDO {
         total_cents INTEGER NOT NULL, coupon_code TEXT, gateway_url TEXT, status TEXT NOT NULL DEFAULT "pending",
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS shipments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id INTEGER UNIQUE NOT NULL,
+        service_code TEXT NOT NULL,
+        service_name TEXT NOT NULL,
+        shipping_cents INTEGER NOT NULL DEFAULT 0,
+        destination_cep TEXT NOT NULL,
+        address_line TEXT,
+        address_number TEXT,
+        address_extra TEXT,
+        neighborhood TEXT,
+        city TEXT,
+        state TEXT,
+        tracking_code TEXT,
+        shipped_at TEXT,
+        tracking_email_sent_at TEXT,
+        FOREIGN KEY(order_id) REFERENCES orders(id)
+    )');
     $defaults = [
         'product_name' => 'Camiseta 406 Montana',
         'price_cents' => '18990',
