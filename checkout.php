@@ -328,26 +328,65 @@ input,select{font-size:16px;border-radius:4px;min-width:0}
         <div class="totals">
             <div class="total-row"><span>Subtotal</span><strong><?=money($subtotal)?></strong></div>
             <?php if ($discount > 0): ?><div class="total-row"><span>Desconto</span><strong>− <?=money($discount)?></strong></div><?php endif; ?>
-            <div class="total-row final"><span>Total</span><strong><?=money($total)?></strong></div>
+            <?php if ($shippingEnabled): ?>
+                <div class="total-row"><span>Frete</span><strong id="shipping-total">Calcule no CEP</strong></div>
+            <?php else: ?>
+                <div class="total-row"><span>Frete</span><strong>A combinar</strong></div>
+            <?php endif; ?>
+            <div class="total-row final"><span>Total<?= $shippingEnabled ? '' : ' parcial' ?></span><strong id="order-total" data-base-cents="<?=$total?>"><?=money($total)?></strong></div>
         </div>
         <p class="payment-note">Você será direcionado para o checkout da InfinitePay. Pix e demais opções disponibilizadas pela sua conta são processados no ambiente seguro do gateway.</p>
     </aside>
 </main>
 <?php if ($shippingEnabled): ?><script>
-const cep=document.getElementById('cep'), shippingSelect=document.getElementById('shipping-code'), shippingTotal=document.getElementById('shipping-total'), shippingMessage=document.getElementById('shipping-message');
-document.getElementById('quote-shipping').addEventListener('click', async () => {
-  const value=cep.value.replace(/\D/g,'');
-  if(value.length!==8){shippingMessage.textContent='Informe um CEP com 8 dígitos.';return}
-  shippingMessage.textContent='Calculando frete…'; shippingSelect.innerHTML='<option value="">Calculando…</option>';
-  try {
-    const response=await fetch('shipping-quote.php?cep='+value,{cache:'no-store'}), data=await response.json();
-    if(!data.ok) throw new Error(data.message||'Não foi possível calcular o frete.');
-    shippingSelect.innerHTML='<option value="">Escolha o envio</option>';
-    data.quotes.forEach(q=>{const o=document.createElement('option');o.value=q.code;o.dataset.cents=q.cents;o.textContent=q.name+' — R$ '+(q.cents/100).toLocaleString('pt-BR',{minimumFractionDigits:2});shippingSelect.appendChild(o)});
-    shippingMessage.textContent='Escolha uma modalidade de envio.';
-  } catch(error) { shippingSelect.innerHTML='<option value="">Frete indisponível</option>';shippingMessage.textContent=error.message; }
-});
-shippingSelect.addEventListener('change',()=>{const o=shippingSelect.selectedOptions[0];shippingTotal.textContent=o&&o.dataset.cents?'R$ '+(Number(o.dataset.cents)/100).toLocaleString('pt-BR',{minimumFractionDigits:2}):'Calcular no CEP';});
+(() => {
+  const cep = document.getElementById('cep');
+  const shippingSelect = document.getElementById('shipping-code');
+  const shippingTotal = document.getElementById('shipping-total');
+  const orderTotal = document.getElementById('order-total');
+  const shippingMessage = document.getElementById('shipping-message');
+  const quoteButton = document.getElementById('quote-shipping');
+  const formatMoney = (cents) => 'R$ ' + (Number(cents) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  function updateTotals() {
+    if (!shippingTotal || !orderTotal || !shippingSelect) return;
+    const option = shippingSelect.options[shippingSelect.selectedIndex];
+    const shippingCents = option && option.dataset.cents ? Number(option.dataset.cents) : 0;
+    const hasShipping = option && option.dataset.cents !== undefined;
+    shippingTotal.textContent = hasShipping ? formatMoney(shippingCents) : 'Calcule no CEP';
+    orderTotal.textContent = formatMoney(Number(orderTotal.dataset.baseCents || 0) + shippingCents);
+  }
+
+  quoteButton.addEventListener('click', async () => {
+    const value = cep.value.replace(/\D/g, '');
+    if (value.length !== 8) {
+      shippingMessage.textContent = 'Informe um CEP com 8 dígitos.';
+      return;
+    }
+    shippingMessage.textContent = 'Calculando frete…';
+    shippingSelect.innerHTML = '<option value="">Calculando…</option>';
+    updateTotals();
+    try {
+      const response = await fetch('shipping-quote.php?cep=' + encodeURIComponent(value), { cache: 'no-store' });
+      const data = await response.json();
+      if (!data.ok) throw new Error(data.message || 'Não foi possível calcular o frete.');
+      shippingSelect.innerHTML = '<option value="">Escolha o envio</option>';
+      data.quotes.forEach((quote) => {
+        const option = document.createElement('option');
+        option.value = quote.code;
+        option.dataset.cents = String(quote.cents);
+        option.textContent = quote.name + ' — ' + formatMoney(quote.cents);
+        shippingSelect.appendChild(option);
+      });
+      shippingMessage.textContent = 'Escolha uma modalidade de envio. O valor será somado ao pedido.';
+    } catch (error) {
+      shippingSelect.innerHTML = '<option value="">Frete indisponível</option>';
+      shippingMessage.textContent = error instanceof Error ? error.message : 'Não foi possível calcular o frete.';
+    }
+    updateTotals();
+  });
+  shippingSelect.addEventListener('change', updateTotals);
+})();
 </script><?php endif; ?>
 </body>
 </html>
