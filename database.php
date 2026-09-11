@@ -65,7 +65,8 @@ function db(): PDO {
         'price_cents' => '18990',
         'promo_price_cents' => '',
         'product_description' => 'Drop 001 — 406 Montana',
-        'measurements_title' => 'Medidas da camiseta'
+        'measurements_title' => 'Medidas da camiseta',
+        'shipping_enabled' => '0'
     ];
     $stmt = $pdo->prepare('INSERT OR IGNORE INTO settings(key,value) VALUES(?,?)');
     foreach ($defaults as $key => $value) $stmt->execute([$key, $value]);
