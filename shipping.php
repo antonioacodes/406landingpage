@@ -35,7 +35,7 @@ function melhor_envio_quote(string $destinationCep): array {
         'options' => ['receipt' => false, 'own_hand' => false],
     ];
     $endpoint = trim((string)($config['melhor_envio_endpoint'] ?? 'https://melhorenvio.com.br/api/v2/me/shipment/calculate'));
-    $agent = trim((string)($config['melhor_envio_user_agent'] ?? '406 Store (vendas@store.406rec.com)'));
+    $agent = trim(setting('melhor_envio_user_agent', (string)($config['melhor_envio_user_agent'] ?? '406 Store (vendas@store.406rec.com)')));
 
     $curl = curl_init($endpoint);
     curl_setopt_array($curl, [
