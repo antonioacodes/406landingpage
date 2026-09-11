@@ -11,8 +11,8 @@ function digits(string $value): string { return preg_replace('/\D+/', '', $value
 
 function melhor_envio_quote(string $destinationCep): array {
     $config = store_config();
-    $token = trim((string)($config['melhor_envio_token'] ?? ''));
-    $origin = digits((string)($config['melhor_envio_origin_cep'] ?? ''));
+    $token = trim(setting('melhor_envio_token', (string)($config['melhor_envio_token'] ?? '')));
+    $origin = digits(setting('melhor_envio_origin_cep', (string)($config['melhor_envio_origin_cep'] ?? '')));
     $destination = digits($destinationCep);
     if ($token === '' || strlen($origin) !== 8) {
         return ['ok' => false, 'message' => 'O cálculo de frete ainda não foi configurado pela loja.'];
@@ -69,6 +69,7 @@ function melhor_envio_quote(string $destinationCep): array {
         $cents = (int)round((float)str_replace(',', '.', (string)$rawPrice) * 100);
         if ($cents < 1) continue;
         $carrier = trim((string)($service['company']['name'] ?? ''));
+        if (stripos($carrier, 'correios') === false) continue;
         $name = trim($carrier . ' — ' . (string)($service['name'] ?? 'Entrega'), ' —');
         $days = $service['custom_delivery_time'] ?? $service['delivery_time'] ?? null;
         $quotes[] = [
