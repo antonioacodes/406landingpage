@@ -332,6 +332,11 @@ $normalPrice = (int) setting('price_cents');
         .form button:hover{background:#a42630}
         .form button span{font-size:20px;font-weight:400}
         .fine{font:400 12px/1.6 Inter,Arial,sans-serif;color:#7c7167;margin:0}
+        .payment-methods{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px 0 2px;border-top:1px solid #d8d0c7}
+        .payment-method{display:grid;justify-items:center;gap:6px;color:#4a423c;font:600 9px/1 Inter,Arial,sans-serif;letter-spacing:.01em;text-align:center}
+        .payment-symbol{height:29px;min-width:45px;display:grid;place-items:center;border:1px solid #cec5bb;border-radius:5px;background:#f7f3ed;font:700 13px/1 Inter,Arial,sans-serif}
+        .payment-symbol.apple{font-size:12px;letter-spacing:-.05em}.payment-symbol.visa{color:#1434cb;font-style:italic;letter-spacing:-.08em}.payment-symbol.pix{color:#1b9b83}
+        .mastercard-mark{width:28px;height:18px;position:relative}.mastercard-mark:before,.mastercard-mark:after{content:'';position:absolute;top:1px;width:16px;height:16px;border-radius:50%;background:#eb001b}.mastercard-mark:before{left:1px}.mastercard-mark:after{right:1px;background:#f79e1b;mix-blend-mode:multiply}
         #feedback{font:400 13px/1.6 Inter,Arial,sans-serif;color:#8e2b30}
         .measurements{margin-top:28px;border-top:1px solid #cec5bb;border-bottom:1px solid #cec5bb;padding:18px 0}
         .measurements summary{cursor:pointer;font:600 13px/1.5 Inter,Arial,sans-serif}
@@ -468,7 +473,13 @@ $normalPrice = (int) setting('price_cents');
                         </select>
                     </label>
                     <?php if (!$sizes): ?><p id="feedback">Os tamanhos serão disponibilizados em breve.</p><?php else: ?><button type="submit">Adicionar ao carrinho <span aria-hidden="true">→</span></button><?php endif; ?>
-                    <p class="fine">Uma peça da história entre Belo Horizonte e Montana.</p>
+                    <div class="payment-methods" aria-label="Meios de pagamento aceitos">
+                        <div class="payment-method"><span class="payment-symbol apple"> Pay</span><span>Apple Pay</span></div>
+                        <div class="payment-method"><span class="payment-symbol visa">VISA</span><span>Crédito Visa</span></div>
+                        <div class="payment-method"><span class="payment-symbol"><i class="mastercard-mark" aria-hidden="true"></i></span><span>Mastercard</span></div>
+                        <div class="payment-method"><span class="payment-symbol pix">◇</span><span>Pix</span></div>
+                    </div>
+                    <p class="fine">Pagamento seguro pela InfinitePay.</p>
                 </form>
                 <details class="measurements">
                     <summary><?=htmlspecialchars(setting('measurements_title', 'Guia de medidas'))?></summary>
