@@ -355,6 +355,10 @@ input,select{font-size:16px;border-radius:4px;min-width:0}
     const hasShipping = option && option.dataset.cents !== undefined;
     shippingTotal.textContent = hasShipping ? formatMoney(shippingCents) : 'Calcule no CEP';
     orderTotal.textContent = formatMoney(Number(orderTotal.dataset.baseCents || 0) + shippingCents);
+    const days = option && option.dataset.days ? Number(option.dataset.days) : 0;
+    shippingMessage.textContent = hasShipping
+      ? (days > 0 ? 'Prazo estimado: até ' + days + ' dia' + (days === 1 ? ' útil.' : 's úteis.') : 'Prazo de entrega informado pela modalidade escolhida.')
+      : 'Escolha uma modalidade de envio.';
   }
 
   quoteButton.addEventListener('click', async () => {
@@ -375,10 +379,12 @@ input,select{font-size:16px;border-radius:4px;min-width:0}
         const option = document.createElement('option');
         option.value = quote.code;
         option.dataset.cents = String(quote.cents);
-        option.textContent = quote.name + ' — ' + formatMoney(quote.cents);
+        if (quote.days !== null && quote.days !== undefined) option.dataset.days = String(quote.days);
+        const deadline = Number(quote.days) > 0 ? ' · até ' + quote.days + ' dia' + (Number(quote.days) === 1 ? ' útil' : 's úteis') : '';
+        option.textContent = quote.name + deadline + ' — ' + formatMoney(quote.cents);
         shippingSelect.appendChild(option);
       });
-      shippingMessage.textContent = 'Escolha uma modalidade de envio. O valor será somado ao pedido.';
+      shippingMessage.textContent = 'Escolha uma modalidade de envio para ver o prazo e o total do pedido.';
     } catch (error) {
       shippingSelect.innerHTML = '<option value="">Frete indisponível</option>';
       shippingMessage.textContent = error instanceof Error ? error.message : 'Não foi possível calcular o frete.';
