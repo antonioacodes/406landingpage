@@ -58,7 +58,16 @@ function melhor_envio_quote(string $destinationCep): array {
     $data = json_decode($raw, true);
     if ($status < 200 || $status >= 300 || !is_array($data)) {
         error_log('Melhor Envio quote error: HTTP ' . $status . ' / ' . $curlError . ' / ' . $raw);
-        return ['ok' => false, 'message' => 'Não foi possível cotar este CEP agora.'];
+        if ($status === 401 || $status === 403) {
+            $message = 'O token do Melhor Envio foi recusado ou não possui permissão para cotação.';
+        } elseif ($status === 422) {
+            $message = 'O Melhor Envio recusou os dados da cotação. Confira CEP de origem e medidas do produto.';
+        } elseif ($status === 0) {
+            $message = 'A VPS não conseguiu se conectar ao Melhor Envio.';
+        } else {
+            $message = 'O Melhor Envio não respondeu à cotação neste momento.';
+        }
+        return ['ok' => false, 'message' => $message, 'http_status' => $status];
     }
 
     $quotes = [];
