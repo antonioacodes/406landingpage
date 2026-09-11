@@ -284,7 +284,7 @@ input,select{font-size:16px;border-radius:4px;min-width:0}
 
             <fieldset class="shipping-fields">
                 <legend>ENTREGA</legend>
-                <label>CEP<input name="cep" inputmode="numeric" value="<?=e($form['cep'])?>" placeholder="00000-000" required></label>
+                <label>CEP<input id="cep" name="cep" inputmode="numeric" value="<?=e($form['cep'])?>" placeholder="00000-000" required></label>
                 <?php if ($shippingEnabled): ?>
                 <div class="field-row"><label>FRETE<select id="shipping-code" name="shipping_code" required><option value="">Informe o CEP primeiro</option></select></label><div class="quote-space"><button class="secondary" type="button" id="quote-shipping">CALCULAR FRETE</button></div></div>
                 <p class="coupon-message" id="shipping-message">O frete é calculado pelos Correios a partir de Belo Horizonte.</p>
