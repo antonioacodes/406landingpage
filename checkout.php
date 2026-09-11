@@ -2,6 +2,7 @@
 declare(strict_types=1);
 session_start();
 require __DIR__ . '/database.php';
+require __DIR__ . '/shipping.php';
 
 $pdo = db();
 $token = (string)($_SESSION['cart_token'] ?? '');
@@ -56,16 +57,31 @@ $form = [
     'name' => trim((string)($_POST['name'] ?? '')),
     'email' => strtolower(trim((string)($_POST['email'] ?? ''))),
     'phone' => trim((string)($_POST['phone'] ?? '')),
+    'cep' => trim((string)($_POST['cep'] ?? '')),
+    'address_line' => trim((string)($_POST['address_line'] ?? '')),
+    'address_number' => trim((string)($_POST['address_number'] ?? '')),
+    'address_extra' => trim((string)($_POST['address_extra'] ?? '')),
+    'neighborhood' => trim((string)($_POST['neighborhood'] ?? '')),
+    'city' => trim((string)($_POST['city'] ?? '')),
+    'state' => strtoupper(trim((string)($_POST['state'] ?? ''))),
+    'shipping_code' => trim((string)($_POST['shipping_code'] ?? '')),
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
     $password = (string)($_POST['password'] ?? '');
 
+    $shipping = selected_shipping($form['cep'], $form['shipping_code']);
     if ($form['name'] === '' || !filter_var($form['email'], FILTER_VALIDATE_EMAIL) || mb_strlen($password) < 8) {
         $error = 'Preencha nome, e-mail válido e uma senha de pelo menos 8 caracteres.';
     } elseif ($form['phone'] === '') {
         $error = 'Informe o telefone para contato sobre o pedido.';
+    } elseif ($form['address_line'] === '' || $form['address_number'] === '' || $form['neighborhood'] === '' || $form['city'] === '' || strlen($form['state']) !== 2) {
+        $error = 'Preencha o endereço completo para entrega.';
+    } elseif (!$shipping) {
+        $error = 'Escolha uma opção de frete válida. Informe o CEP e clique em calcular.';
     } else {
+        $shippingCents = (int)$shipping['cents'];
+        $total += $shippingCents;
         $pdo->prepare(
             'INSERT INTO customers(name,email,phone,password_hash)
              VALUES(?,?,?,?)
@@ -94,6 +110,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
         )->execute([
             $orderNsu, $customerId, $cartId, $subtotal, $discount, $total, $coupon ?: null
         ]);
+        $orderId = (int)$pdo->lastInsertId();
+        $pdo->prepare('INSERT INTO shipments(order_id,service_code,service_name,shipping_cents,destination_cep,address_line,address_number,address_extra,neighborhood,city,state) VALUES(?,?,?,?,?,?,?,?,?,?,?)')->execute([
+            $orderId, $shipping['code'], $shipping['name'], $shippingCents, digits($form['cep']),
+            $form['address_line'], $form['address_number'], $form['address_extra'],
+            $form['neighborhood'], $form['city'], $form['state']
+        ]);
 
         $config = is_file(__DIR__ . '/config.php') ? require __DIR__ . '/config.php' : [];
         $handle = ltrim(trim((string)($config['infinitepay_handle'] ?? 'f406')), '$');
@@ -119,11 +141,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
         $payload = [
             'handle' => $handle,
             'order_nsu' => $orderNsu,
-            'items' => [[
-                'quantity' => 1,
-                'price' => $total,
-                'description' => setting('product_name') . ' — pedido ' . $orderNsu,
-            ]],
+            'items' => [
+                ['quantity' => 1, 'price' => max(0, $subtotal - $discount), 'description' => setting('product_name')],
+                ['quantity' => 1, 'price' => $shippingCents, 'description' => 'Frete — ' . $shipping['name']],
+            ],
             'redirect_url' => $redirectUrl,
             'webhook_url' => $webhookUrl,
             'customer' => [
@@ -164,8 +185,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finish_order'])) {
         $error = 'Não foi possível abrir o pagamento agora. Tente novamente em alguns instantes.';
         $reason = $httpCode === 0 ? 'Falha de conexão com a InfinitePay. Verifique DNS, cURL e certificado TLS da VPS.'
             : (($httpCode === 401 || $httpCode === 403) ? 'Acesso recusado pela InfinitePay. Confira a InfiniteTag da conta em config.php.'
+            : ($httpCode === 404 ? 'O Checkout Integrado não está habilitado para esta InfiniteTag. Ative-o no app da InfinitePay em Vendas > Checkout > Configurações.'
             : (($httpCode === 400 || $httpCode === 422) ? 'A InfinitePay recusou os dados enviados. Confira InfiniteTag, valor e dados do comprador.'
-            : 'A InfinitePay retornou uma resposta inesperada.'));
+            : 'A InfinitePay retornou uma resposta inesperada.')));
         $reference = 'HTTP ' . $httpCode . ' / pedido ' . $orderNsu;
         save_setting('checkout_last_error', date('d/m/Y H:i') . ' — ' . $reference . ' — ' . $reason);
         $error .= ' Referência: ' . $orderNsu . ' (HTTP ' . $httpCode . ').';
@@ -202,7 +224,7 @@ function e(string $value): string {
         label{display:grid;gap:8px;font:500 10px "DM Mono";letter-spacing:.1em;color:#c8bbb0}
         input{width:100%;border:1px solid var(--line);background:#120f0d;color:#fff;padding:16px 15px;outline:none;font:15px Inter;border-radius:2px}
         input:focus{border-color:#d85a60;box-shadow:0 0 0 3px #d1272f20}
-        .coupon-row{display:grid;grid-template-columns:1fr auto;gap:10px}.coupon-row button{padding-inline:20px;background:#241d19}
+        .coupon-row{display:grid;grid-template-columns:1fr auto;gap:10px}.coupon-row button{padding-inline:20px;background:#241d19}.shipping-fields{border:1px solid var(--line);padding:16px;margin:0;display:grid;gap:14px}.shipping-fields legend{padding:0 6px;font:500 10px "DM Mono";letter-spacing:.1em;color:#c8bbb0}.secondary{background:#241d19}
         button{border:0;background:var(--red);color:white;padding:18px;font:700 12px "DM Mono";letter-spacing:.1em;cursor:pointer;transition:.2s}
         button:hover{background:#ed3740;transform:translateY(-2px)}
         .pay-button{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px}
@@ -265,6 +287,16 @@ input,select{font-size:16px;border-radius:4px;min-width:0}
                 <input type="email" name="email" autocomplete="email" value="<?=e($form['email'])?>" placeholder="voce@email.com" required>
             </label>
 
+            <fieldset class="shipping-fields">
+                <legend>ENTREGA</legend>
+                <div class="field-row"><label>CEP<input id="cep" name="cep" inputmode="numeric" value="<?=e($form['cep'])?>" placeholder="00000-000" required></label><label>FRETE<select id="shipping-code" name="shipping_code" required><option value="">Informe o CEP primeiro</option></select></label></div>
+                <button class="secondary" type="button" id="quote-shipping">CALCULAR FRETE</button>
+                <p class="coupon-message" id="shipping-message">O frete é calculado pelos Correios a partir de Belo Horizonte.</p>
+                <label>RUA / AVENIDA<input name="address_line" value="<?=e($form['address_line'])?>" required></label>
+                <div class="field-row"><label>NÚMERO<input name="address_number" value="<?=e($form['address_number'])?>" required></label><label>COMPLEMENTO<input name="address_extra" value="<?=e($form['address_extra'])?>"></label></div>
+                <div class="field-row"><label>BAIRRO<input name="neighborhood" value="<?=e($form['neighborhood'])?>" required></label><label>CIDADE<input name="city" value="<?=e($form['city'])?>" required></label></div>
+                <label>UF<input name="state" maxlength="2" value="<?=e($form['state'])?>" placeholder="MG" required></label>
+            </fieldset>
             <label>CRIE UMA SENHA
                 <input name="password" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo de 8 caracteres" required>
             </label>
@@ -302,5 +334,21 @@ input,select{font-size:16px;border-radius:4px;min-width:0}
         <p class="payment-note">Você será direcionado para o checkout da InfinitePay. Pix e demais opções disponibilizadas pela sua conta são processados no ambiente seguro do gateway.</p>
     </aside>
 </main>
+<script>
+const cep=document.getElementById('cep'), shippingSelect=document.getElementById('shipping-code'), shippingTotal=document.getElementById('shipping-total'), shippingMessage=document.getElementById('shipping-message');
+document.getElementById('quote-shipping').addEventListener('click', async () => {
+  const value=cep.value.replace(/\D/g,'');
+  if(value.length!==8){shippingMessage.textContent='Informe um CEP com 8 dígitos.';return}
+  shippingMessage.textContent='Calculando frete…'; shippingSelect.innerHTML='<option value="">Calculando…</option>';
+  try {
+    const response=await fetch('shipping-quote.php?cep='+value,{cache:'no-store'}), data=await response.json();
+    if(!data.ok) throw new Error(data.message||'Não foi possível calcular o frete.');
+    shippingSelect.innerHTML='<option value="">Escolha o envio</option>';
+    data.quotes.forEach(q=>{const o=document.createElement('option');o.value=q.code;o.dataset.cents=q.cents;o.textContent=q.name+' — R$ '+(q.cents/100).toLocaleString('pt-BR',{minimumFractionDigits:2});shippingSelect.appendChild(o)});
+    shippingMessage.textContent='Escolha uma modalidade de envio.';
+  } catch(error) { shippingSelect.innerHTML='<option value="">Frete indisponível</option>';shippingMessage.textContent=error.message; }
+});
+shippingSelect.addEventListener('change',()=>{const o=shippingSelect.selectedOptions[0];shippingTotal.textContent=o&&o.dataset.cents?'R$ '+(Number(o.dataset.cents)/100).toLocaleString('pt-BR',{minimumFractionDigits:2}):'Calcular no CEP';});
+</script>
 </body>
 </html>
