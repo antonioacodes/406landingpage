@@ -3,13 +3,7 @@ declare(strict_types=1);
 session_start();
 require __DIR__ . '/database.php';
 
-function send_tracking_email(string $to, string $orderNsu, string $tracking): bool {
-    $config = is_file(__DIR__ . '/config.php') ? require __DIR__ . '/config.php' : [];
-    $from = trim((string)($config['mail_from'] ?? 'vendas@store.406rec.com'));
-    $subject = 'Seu pedido 406 foi enviado';
-    $message = "Olá!\n\nSeu pedido {$orderNsu} foi postado.\nCódigo de rastreio: {$tracking}\n\nAcompanhe em: https://rastreamento.correios.com.br/app/index.php\n\n406 REC";
-    return @mail($to, $subject, $message, "From: {$from}\r\nContent-Type: text/plain; charset=UTF-8");
-}
+require __DIR__ . '/mailer.php';
 
 $pdo = db();
 $adminCount = (int)$pdo->query('SELECT COUNT(*) FROM admins')->fetchColumn();
@@ -103,6 +97,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ->execute([strtoupper(trim((string)$_POST['code'])), $kind, max(0, (int)$_POST['value'])]);
             $message = 'Cupom criado.';
         }
+        if ($action === 'integrations') {
+            foreach (['melhor_envio_origin_cep','melhor_envio_user_agent','smtp_host','smtp_port','smtp_username','smtp_encryption','smtp_from'] as $key) {
+                save_setting($key, trim((string)($_POST[$key] ?? '')));
+            }
+            foreach (['melhor_envio_token','smtp_password'] as $key) {
+                $value = trim((string)($_POST[$key] ?? ''));
+                if ($value !== '') save_setting($key, $value);
+            }
+            $message = 'Integrações atualizadas.';
+        }
+        if ($action === 'email_template') {
+            save_setting('tracking_email_subject', trim((string)($_POST['tracking_email_subject'] ?? '')));
+            save_setting('tracking_email_html', (string)($_POST['tracking_email_html'] ?? ''));
+            $message = 'Modelo de e-mail atualizado.';
+        }
         if ($action === 'delete_coupon') {
             $pdo->prepare('DELETE FROM coupons WHERE id=?')->execute([(int)($_POST['id'] ?? 0)]);
             $message = 'Cupom excluído.';
@@ -134,7 +143,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $customer = $pdo->prepare('SELECT c.email,o.order_nsu FROM orders o JOIN customers c ON c.id=o.customer_id WHERE o.id=?');
             $customer->execute([$orderId]);
             $recipient = $customer->fetch(PDO::FETCH_ASSOC);
-            $sent = $recipient ? send_tracking_email((string)$recipient['email'], (string)$recipient['order_nsu'], $tracking) : false;
+            $sent = false;
+            if ($recipient) {
+                [$subject, $html] = tracking_email_html((string)$recipient['order_nsu'], $tracking);
+                $sent = send_store_email((string)$recipient['email'], $subject, $html);
+            }
             if ($sent) $pdo->prepare('UPDATE shipments SET tracking_email_sent_at=CURRENT_TIMESTAMP WHERE order_id=?')->execute([$orderId]);
             $message = $sent ? 'Rastreio salvo e e-mail enviado ao cliente.' : 'Rastreio salvo. O e-mail não saiu; confira o envio de e-mails da VPS.';
         }
@@ -159,6 +172,12 @@ $recentOrders = $pdo->query(
      FROM orders o LEFT JOIN customers c ON c.id=o.customer_id
      LEFT JOIN shipments sh ON sh.order_id=o.id
      ORDER BY o.id DESC LIMIT 12'
+)->fetchAll(PDO::FETCH_ASSOC);
+$completedOrders = $pdo->query(
+    "SELECT o.*, c.name AS customer_name, c.email AS customer_email, sh.service_name, sh.tracking_code, sh.tracking_email_sent_at
+     FROM orders o LEFT JOIN customers c ON c.id=o.customer_id
+     LEFT JOIN shipments sh ON sh.order_id=o.id
+     WHERE o.status='paid' ORDER BY o.id DESC LIMIT 50"
 )->fetchAll(PDO::FETCH_ASSOC);
 
 function val(string $key): string {
@@ -191,7 +210,7 @@ function status_label(string $status): string {
 .metrics{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:13px;margin-bottom:24px}.metric{min-height:118px;padding:18px;background:linear-gradient(145deg,var(--panel2),var(--panel));border:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between}.metric span{font:10px "DM Mono";letter-spacing:.11em;color:#8f837a}.metric strong{font:38px "Bebas Neue";letter-spacing:.04em}.metric.featured{background:linear-gradient(145deg,#b51d24,#721218);border-color:#db3d44}
 .grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(310px,.75fr);gap:20px;align-items:start}.stack{display:grid;gap:20px}.panel{background:var(--panel);border:1px solid var(--line);padding:24px}.panel-head{display:flex;align-items:start;justify-content:space-between;gap:20px;margin-bottom:22px}.panel h2{font:32px/1 "Bebas Neue";letter-spacing:.04em;margin:0}.panel .hint{color:var(--muted);font-size:11px;line-height:1.5;margin-top:5px}
 form{display:grid;gap:13px}.row{display:grid;grid-template-columns:1fr 1fr;gap:13px}label{display:grid;gap:7px;color:#aa9e94;font:500 10px "DM Mono";letter-spacing:.08em}input,textarea,select{width:100%;padding:12px;border:1px solid #493a33;background:#0c0a09;color:#fff;font:14px Inter;outline:0}input:focus,textarea:focus,select:focus{border-color:#d55258}textarea{min-height:100px;resize:vertical}button{padding:13px 16px;border:0;background:var(--red);color:#fff;font:700 10px "DM Mono";letter-spacing:.1em;cursor:pointer}button:hover{background:#ec353e}.secondary{background:#2a211d}
-.table-wrap{overflow:auto;margin-top:18px}.toggle{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);cursor:pointer}.toggle input{width:20px;height:20px;accent-color:var(--red)}.tracking-form{display:flex;gap:6px;margin-top:7px;min-width:220px}.tracking-form input{padding:7px;font-size:12px}.tracking-form button{padding:7px 9px;font-size:9px}table{width:100%;border-collapse:collapse;white-space:nowrap}th,td{padding:13px 10px;text-align:left;border-bottom:1px solid #332923}th{color:#83786f;font:500 9px "DM Mono";letter-spacing:.1em}td{font-size:12px}.table-input{min-width:80px;padding:8px}.status{display:inline-block;padding:6px 8px;border-radius:20px;background:#4b3515;color:#f1cd85;font:9px "DM Mono";text-transform:uppercase}.status.paid{background:#153c24;color:#93e6ae}.empty{padding:30px 0;text-align:center;color:#81766d;font-size:12px}.price-preview{padding:16px;background:#0d0b0a;border:1px solid var(--line)}.price-preview span{display:block;color:#8e8279;font:9px "DM Mono";letter-spacing:.1em}.price-preview strong{display:block;margin-top:6px;font:32px "Bebas Neue"}
+.table-wrap{overflow:auto;margin-top:18px}hr{width:100%;border:0;border-top:1px solid var(--line);margin:8px 0}.toggle{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);cursor:pointer}.toggle input{width:20px;height:20px;accent-color:var(--red)}.tracking-form{display:flex;gap:6px;margin-top:7px;min-width:220px}.tracking-form input{padding:7px;font-size:12px}.tracking-form button{padding:7px 9px;font-size:9px}table{width:100%;border-collapse:collapse;white-space:nowrap}th,td{padding:13px 10px;text-align:left;border-bottom:1px solid #332923}th{color:#83786f;font:500 9px "DM Mono";letter-spacing:.1em}td{font-size:12px}.table-input{min-width:80px;padding:8px}.status{display:inline-block;padding:6px 8px;border-radius:20px;background:#4b3515;color:#f1cd85;font:9px "DM Mono";text-transform:uppercase}.status.paid{background:#153c24;color:#93e6ae}.empty{padding:30px 0;text-align:center;color:#81766d;font-size:12px}.price-preview{padding:16px;background:#0d0b0a;border:1px solid var(--line)}.price-preview span{display:block;color:#8e8279;font:9px "DM Mono";letter-spacing:.1em}.price-preview strong{display:block;margin-top:6px;font:32px "Bebas Neue"}
 @media(max-width:1120px){.metrics{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr}}
 @media(max-width:760px){.layout{display:block}.sidebar{position:static;height:auto;padding:18px 5vw;display:grid;grid-template-columns:1fr auto;align-items:center}.logo{font-size:42px}.side-label,.nav{display:none}.logout{margin:0}.content{padding:25px 5vw 60px}.topbar{align-items:start}.topbar h1{font-size:42px}.metrics{grid-template-columns:1fr 1fr}.metric{min-height:100px}.row{grid-template-columns:1fr}.panel{padding:18px}.visit{display:none}}
 
@@ -217,7 +236,7 @@ th,td{padding:12px 8px}button{min-height:44px}
 <div class="layout">
 <aside class="sidebar">
     <div><div class="logo"><img src="assets/logo406.png" alt="406 REC"></div><div class="side-label">STORE CONTROL</div></div>
-    <nav class="nav"><a href="#dashboard">DASHBOARD</a><a href="#pedidos">PEDIDOS</a><a href="#produto">PRODUTO E PREÇO</a><a href="#estoque">TAMANHOS E ESTOQUE</a><a href="#cupons">CUPONS</a></nav>
+    <nav class="nav"><a href="#dashboard">DASHBOARD</a><a href="#pedidos">PEDIDOS</a><a href="#concluidos">CONCLUÍDOS</a><a href="#produto">PRODUTO E PREÇO</a><a href="#estoque">TAMANHOS E ESTOQUE</a><a href="#cupons">CUPONS</a><a href="#integracoes">INTEGRAÇÕES</a><a href="#email">E-MAIL</a></nav>
     <a class="logout" href="?logout=1">SAIR DO PAINEL</a>
 </aside>
 <main class="content" id="dashboard">
@@ -239,8 +258,21 @@ th,td{padding:12px 8px}button{min-height:44px}
                 <div class="panel-head"><div><h2>PEDIDOS RECENTES</h2><div class="hint">Últimos pagamentos gerados pelo checkout.</div></div></div>
                 <?php if (!$recentOrders): ?><div class="empty">Nenhum pedido foi gerado ainda.</div><?php else: ?>
                 <div class="table-wrap"><table><thead><tr><th>PEDIDO</th><th>CLIENTE</th><th>TOTAL</th><th>STATUS</th><th>FRETE / RASTREIO</th><th>DATA</th><th>AÇÃO</th></tr></thead><tbody>
-                <?php foreach ($recentOrders as $order): ?><tr><td><?=esc((string)$order['order_nsu'])?></td><td><?=esc((string)($order['customer_name'] ?: $order['customer_email']))?></td><td><?=money((int)$order['total_cents'])?></td><td><span class="status <?=esc((string)$order['status'])?>"><?=esc(status_label((string)$order['status']))?></span></td><td><?php if ($order['service_name']): ?><small><?=esc((string)$order['service_name'])?></small><form method="post" class="tracking-form"><input type="hidden" name="action" value="tracking"><input type="hidden" name="order_id" value="<?=(int)$order['id']?>"><input name="tracking_code" value="<?=esc((string)$order['tracking_code'])?>" placeholder="Código de rastreio"><button>ENVIAR</button></form><?php else: ?>—<?php endif; ?></td><td><?=date('d/m/Y H:i', strtotime((string)$order['created_at']))?></td><td><?php if ($order['status'] !== 'paid'): ?><form class="delete-form" method="post" onsubmit="return confirm('Excluir este pedido não pago?')"><input type="hidden" name="action" value="delete_order"><input type="hidden" name="id" value="<?=(int)$order['id']?>"><button class="danger">EXCLUIR</button></form><?php else: ?>—<?php endif; ?></td></tr><?php endforeach; ?>
+                <?php foreach ($recentOrders as $order): ?><tr><td><?=esc((string)$order['order_nsu'])?></td><td><?=esc((string)($order['customer_name'] ?: $order['customer_email']))?></td><td><?=money((int)$order['total_cents'])?></td><td><span class="status <?=esc((string)$order['status'])?>"><?=esc(status_label((string)$order['status']))?></span></td><td><?php if ($order['service_name']): ?><small><?=esc((string)$order['service_name'])?><?= $order['tracking_code'] ? ' · ' . esc((string)$order['tracking_code']) : '' ?></small><?php else: ?>—<?php endif; ?></td><td><?=date('d/m/Y H:i', strtotime((string)$order['created_at']))?></td><td><?php if ($order['status'] !== 'paid'): ?><form class="delete-form" method="post" onsubmit="return confirm('Excluir este pedido não pago?')"><input type="hidden" name="action" value="delete_order"><input type="hidden" name="id" value="<?=(int)$order['id']?>"><button class="danger">EXCLUIR</button></form><?php else: ?>—<?php endif; ?></td></tr><?php endforeach; ?>
                 </tbody></table></div><?php endif; ?>
+            </section>
+
+            <section class="panel" id="concluidos">
+                <div class="panel-head"><div><h2>PEDIDOS CONCLUÍDOS</h2><div class="hint">Pedidos pagos. Informe o rastreio e dispare o e-mail ao cliente.</div></div></div>
+                <?php if (!$completedOrders): ?><div class="empty">Nenhum pagamento confirmado ainda.</div><?php else: ?>
+                <div class="table-wrap"><table><thead><tr><th>PEDIDO</th><th>CLIENTE</th><th>ENVIO</th><th>RASTREIO</th><th>NOTIFICAÇÃO</th></tr></thead><tbody>
+                <?php foreach ($completedOrders as $order): ?><tr>
+                    <td><?=esc((string)$order['order_nsu'])?></td>
+                    <td><?=esc((string)($order['customer_name'] ?: $order['customer_email']))?></td>
+                    <td><?=esc((string)($order['service_name'] ?: 'Frete a combinar'))?></td>
+                    <td><form method="post" class="tracking-form"><input type="hidden" name="action" value="tracking"><input type="hidden" name="order_id" value="<?=(int)$order['id']?>"><input name="tracking_code" value="<?=esc((string)$order['tracking_code'])?>" placeholder="Código de rastreio"><button>ENVIAR E-MAIL</button></form></td>
+                    <td><?=$order['tracking_email_sent_at'] ? 'Enviado em ' . date('d/m/Y H:i', strtotime((string)$order['tracking_email_sent_at'])) : 'Aguardando rastreio'?></td>
+                </tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
             </section>
 
             <section class="panel" id="produto">
@@ -275,6 +307,29 @@ th,td{padding:12px 8px}button{min-height:44px}
                 <div class="panel-head"><div><h2>CUPONS</h2><div class="hint">Crie descontos para campanhas.</div></div></div>
                 <form method="post"><input type="hidden" name="action" value="coupon"><label>CÓDIGO<input name="code" placeholder="MONTANA10" required></label><label>TIPO<select name="kind"><option value="percent">Percentual (%)</option><option value="fixed">Valor fixo (centavos)</option></select></label><label>VALOR<input name="value" type="number" min="1" placeholder="10" required></label><button>CRIAR CUPOM</button></form>
                 <div class="table-wrap"><table><thead><tr><th>CÓDIGO</th><th>TIPO</th><th>VALOR</th><th>AÇÃO</th></tr></thead><tbody><?php foreach ($coupons as $couponRow): ?><tr><td><?=esc((string)$couponRow['code'])?></td><td><?=$couponRow['kind'] === 'percent' ? 'Percentual' : 'Fixo'?></td><td><?=$couponRow['kind'] === 'percent' ? (int)$couponRow['value'].'%' : money((int)$couponRow['value'])?></td><td><form class="delete-form" method="post" onsubmit="return confirm('Excluir este cupom?')"><input type="hidden" name="action" value="delete_coupon"><input type="hidden" name="id" value="<?=(int)$couponRow['id']?>"><button class="danger">EXCLUIR</button></form></td></tr><?php endforeach; ?></tbody></table></div>
+            </section>
+
+            <section class="panel" id="integracoes">
+                <div class="panel-head"><div><h2>INTEGRAÇÕES</h2><div class="hint">Token do Melhor Envio (apenas Correios) e servidor de e-mail.</div></div></div>
+                <form method="post"><input type="hidden" name="action" value="integrations">
+                    <label>TOKEN MELHOR ENVIO<input name="melhor_envio_token" type="password" autocomplete="new-password" placeholder="Deixe vazio para manter o token atual"></label>
+                    <div class="row"><label>CEP DE POSTAGEM (BH)<input name="melhor_envio_origin_cep" inputmode="numeric" value="<?=val('melhor_envio_origin_cep')?>" placeholder="00000-000"></label><label>USER-AGENT MELHOR ENVIO<input name="melhor_envio_user_agent" value="<?=val('melhor_envio_user_agent')?>"></label></div>
+                    <hr>
+                    <div class="eyebrow">SMTP PARA RASTREIO</div>
+                    <div class="row"><label>SERVIDOR SMTP<input name="smtp_host" value="<?=val('smtp_host')?>" placeholder="smtp.seudominio.com"></label><label>PORTA<input name="smtp_port" inputmode="numeric" value="<?=val('smtp_port') ?: '587'?>"></label></div>
+                    <div class="row"><label>USUÁRIO SMTP<input name="smtp_username" value="<?=val('smtp_username')?>" placeholder="vendas@store.406rec.com"></label><label>SENHA SMTP<input name="smtp_password" type="password" autocomplete="new-password" placeholder="Deixe vazio para manter"></label></div>
+                    <div class="row"><label>CRIPTOGRAFIA<select name="smtp_encryption"><option value="tls" <?=setting('smtp_encryption','tls') === 'tls' ? 'selected' : ''?>>TLS (porta 587)</option><option value="ssl" <?=setting('smtp_encryption') === 'ssl' ? 'selected' : ''?>>SSL (porta 465)</option><option value="none" <?=setting('smtp_encryption') === 'none' ? 'selected' : ''?>>Sem criptografia</option></select></label><label>REMETENTE<input name="smtp_from" type="email" value="<?=val('smtp_from')?>" placeholder="vendas@store.406rec.com"></label></div>
+                    <button>SALVAR INTEGRAÇÕES</button>
+                </form>
+            </section>
+
+            <section class="panel" id="email">
+                <div class="panel-head"><div><h2>MODELO DE E-MAIL</h2><div class="hint">Use {{pedido}}, {{rastreio}} e {{link_rastreio}} como variáveis.</div></div></div>
+                <form method="post"><input type="hidden" name="action" value="email_template">
+                    <label>ASSUNTO<input name="tracking_email_subject" value="<?=val('tracking_email_subject') ?: 'Seu pedido 406 foi enviado'?>"></label>
+                    <label>HTML DO E-MAIL<textarea name="tracking_email_html" style="min-height:260px"><?=val('tracking_email_html') ?: '&lt;h1&gt;Seu pedido foi enviado.&lt;/h1&gt;&lt;p&gt;Pedido: &lt;strong&gt;{{pedido}}&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;Código de rastreio: &lt;strong&gt;{{rastreio}}&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;{{link_rastreio}}&quot;&gt;Acompanhar entrega&lt;/a&gt;&lt;/p&gt;'?></textarea></label>
+                    <button>SALVAR MODELO</button>
+                </form>
             </section>
         </div>
     </div>
