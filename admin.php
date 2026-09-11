@@ -103,6 +103,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ->execute([strtoupper(trim((string)$_POST['code'])), $kind, max(0, (int)$_POST['value'])]);
             $message = 'Cupom criado.';
         }
+        if ($action === 'delete_coupon') {
+            $pdo->prepare('DELETE FROM coupons WHERE id=?')->execute([(int)($_POST['id'] ?? 0)]);
+            $message = 'Cupom excluído.';
+        }
+        if ($action === 'delete_size') {
+            $id = (int)($_POST['id'] ?? 0);
+            $use = $pdo->prepare('SELECT COUNT(*) FROM cart_items WHERE size_id=?');
+            $use->execute([$id]);
+            if ((int)$use->fetchColumn() > 0) throw new RuntimeException('Tamanho vinculado a carrinho ou pedido.');
+            $pdo->prepare('DELETE FROM sizes WHERE id=?')->execute([$id]);
+            $message = 'Tamanho excluído.';
+        }
+        if ($action === 'delete_order') {
+            $id = (int)($_POST['id'] ?? 0);
+            $status = $pdo->prepare('SELECT status FROM orders WHERE id=?');
+            $status->execute([$id]);
+            if ($status->fetchColumn() === 'paid') throw new RuntimeException('Pedidos pagos não podem ser excluídos pelo painel.');
+            $pdo->beginTransaction();
+            $pdo->prepare('DELETE FROM shipments WHERE order_id=?')->execute([$id]);
+            $pdo->prepare('DELETE FROM orders WHERE id=?')->execute([$id]);
+            $pdo->commit();
+            $message = 'Pedido não pago excluído.';
+        }
         if ($action === 'tracking') {
             $orderId = (int)($_POST['order_id'] ?? 0);
             $tracking = strtoupper(trim((string)($_POST['tracking_code'] ?? '')));
@@ -116,7 +139,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = $sent ? 'Rastreio salvo e e-mail enviado ao cliente.' : 'Rastreio salvo. O e-mail não saiu; confira o envio de e-mails da VPS.';
         }
     } catch (Throwable $exception) {
-        $message = 'Não foi possível salvar. Verifique se o código ou tamanho já existe.';
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        $message = $exception instanceof RuntimeException ? $exception->getMessage() : 'Não foi possível salvar. Verifique os dados.';
         $messageType = 'error';
     }
 }
@@ -214,8 +238,8 @@ th,td{padding:12px 8px}button{min-height:44px}
             <section class="panel" id="pedidos">
                 <div class="panel-head"><div><h2>PEDIDOS RECENTES</h2><div class="hint">Últimos pagamentos gerados pelo checkout.</div></div></div>
                 <?php if (!$recentOrders): ?><div class="empty">Nenhum pedido foi gerado ainda.</div><?php else: ?>
-                <div class="table-wrap"><table><thead><tr><th>PEDIDO</th><th>CLIENTE</th><th>TOTAL</th><th>STATUS</th><th>FRETE / RASTREIO</th><th>DATA</th></tr></thead><tbody>
-                <?php foreach ($recentOrders as $order): ?><tr><td><?=esc((string)$order['order_nsu'])?></td><td><?=esc((string)($order['customer_name'] ?: $order['customer_email']))?></td><td><?=money((int)$order['total_cents'])?></td><td><span class="status <?=esc((string)$order['status'])?>"><?=esc(status_label((string)$order['status']))?></span></td><td><?php if ($order['service_name']): ?><small><?=esc((string)$order['service_name'])?></small><form method="post" class="tracking-form"><input type="hidden" name="action" value="tracking"><input type="hidden" name="order_id" value="<?=(int)$order['id']?>"><input name="tracking_code" value="<?=esc((string)$order['tracking_code'])?>" placeholder="Código de rastreio"><button>ENVIAR</button></form><?php else: ?>—<?php endif; ?></td><td><?=date('d/m/Y H:i', strtotime((string)$order['created_at']))?></td></tr><?php endforeach; ?>
+                <div class="table-wrap"><table><thead><tr><th>PEDIDO</th><th>CLIENTE</th><th>TOTAL</th><th>STATUS</th><th>FRETE / RASTREIO</th><th>DATA</th><th>AÇÃO</th></tr></thead><tbody>
+                <?php foreach ($recentOrders as $order): ?><tr><td><?=esc((string)$order['order_nsu'])?></td><td><?=esc((string)($order['customer_name'] ?: $order['customer_email']))?></td><td><?=money((int)$order['total_cents'])?></td><td><span class="status <?=esc((string)$order['status'])?>"><?=esc(status_label((string)$order['status']))?></span></td><td><?php if ($order['service_name']): ?><small><?=esc((string)$order['service_name'])?></small><form method="post" class="tracking-form"><input type="hidden" name="action" value="tracking"><input type="hidden" name="order_id" value="<?=(int)$order['id']?>"><input name="tracking_code" value="<?=esc((string)$order['tracking_code'])?>" placeholder="Código de rastreio"><button>ENVIAR</button></form><?php else: ?>—<?php endif; ?></td><td><?=date('d/m/Y H:i', strtotime((string)$order['created_at']))?></td><td><?php if ($order['status'] !== 'paid'): ?><form class="delete-form" method="post" onsubmit="return confirm('Excluir este pedido não pago?')"><input type="hidden" name="action" value="delete_order"><input type="hidden" name="id" value="<?=(int)$order['id']?>"><button class="danger">EXCLUIR</button></form><?php else: ?>—<?php endif; ?></td></tr><?php endforeach; ?>
                 </tbody></table></div><?php endif; ?>
             </section>
 
@@ -241,7 +265,7 @@ th,td{padding:12px 8px}button{min-height:44px}
                     <td><?=esc((string)$size['name'])?></td>
                     <td><input class="table-input" form="<?=$formId?>" name="stock" type="number" min="0" value="<?=(int)$size['stock']?>"></td>
                     <td><input form="<?=$formId?>" name="active" type="checkbox" <?=$size['active'] ? 'checked' : ''?>></td>
-                    <td><form id="<?=$formId?>" method="post"><input type="hidden" name="action" value="stock"><input type="hidden" name="id" value="<?=(int)$size['id']?>"></form><button class="secondary" form="<?=$formId?>">SALVAR</button></td>
+                    <td><form id="<?=$formId?>" method="post"><input type="hidden" name="action" value="stock"><input type="hidden" name="id" value="<?=(int)$size['id']?>"></form><button class="secondary" form="<?=$formId?>">SALVAR</button><form class="delete-form" method="post" onsubmit="return confirm('Excluir este tamanho?')"><input type="hidden" name="action" value="delete_size"><input type="hidden" name="id" value="<?=(int)$size['id']?>"><button class="danger">EXCLUIR</button></form></td>
                 </tr><?php endforeach; ?></tbody></table></div>
             </section>
         </div>
@@ -250,7 +274,7 @@ th,td{padding:12px 8px}button{min-height:44px}
             <section class="panel" id="cupons">
                 <div class="panel-head"><div><h2>CUPONS</h2><div class="hint">Crie descontos para campanhas.</div></div></div>
                 <form method="post"><input type="hidden" name="action" value="coupon"><label>CÓDIGO<input name="code" placeholder="MONTANA10" required></label><label>TIPO<select name="kind"><option value="percent">Percentual (%)</option><option value="fixed">Valor fixo (centavos)</option></select></label><label>VALOR<input name="value" type="number" min="1" placeholder="10" required></label><button>CRIAR CUPOM</button></form>
-                <div class="table-wrap"><table><thead><tr><th>CÓDIGO</th><th>TIPO</th><th>VALOR</th></tr></thead><tbody><?php foreach ($coupons as $couponRow): ?><tr><td><?=esc((string)$couponRow['code'])?></td><td><?=$couponRow['kind'] === 'percent' ? 'Percentual' : 'Fixo'?></td><td><?=$couponRow['kind'] === 'percent' ? (int)$couponRow['value'].'%' : money((int)$couponRow['value'])?></td></tr><?php endforeach; ?></tbody></table></div>
+                <div class="table-wrap"><table><thead><tr><th>CÓDIGO</th><th>TIPO</th><th>VALOR</th><th>AÇÃO</th></tr></thead><tbody><?php foreach ($coupons as $couponRow): ?><tr><td><?=esc((string)$couponRow['code'])?></td><td><?=$couponRow['kind'] === 'percent' ? 'Percentual' : 'Fixo'?></td><td><?=$couponRow['kind'] === 'percent' ? (int)$couponRow['value'].'%' : money((int)$couponRow['value'])?></td><td><form class="delete-form" method="post" onsubmit="return confirm('Excluir este cupom?')"><input type="hidden" name="action" value="delete_coupon"><input type="hidden" name="id" value="<?=(int)$couponRow['id']?>"><button class="danger">EXCLUIR</button></form></td></tr><?php endforeach; ?></tbody></table></div>
             </section>
         </div>
     </div>
